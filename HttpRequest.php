@@ -10,6 +10,10 @@ class HttpRequest
 {
     const METHOD_GET = "GET";
     const METHOD_POST = "POST";
+    const METHOD_PUT = "PUT";
+    const METHOD_DELETE = "DELETE";
+    const METHOD_HEAD = "HEAD";
+
     const CONTENT_TYPE_JSON = "application/json";
     const HEADER_ACCEPT = "Accept";
     const HEADER_CONTENT_TYPE = "Content-Type";
@@ -94,6 +98,32 @@ class HttpRequest
     }
 
     /**
+     * Принять данные в файл
+     *
+     * @param stream|file $file
+     * @return \HttpRequest
+    */
+    public function receive($file)
+    {
+        if(!is_resource($file)) throw new HttpRequestException('Это не ссылка на файл');
+        $this->getConnection()->setReceiveFile($file);
+        return $this;
+    }
+
+    public function send($string)
+    {
+        $this->getConnection()->setPostFields($string);
+        return $this;
+    }
+    public function upload($fileName)
+    {
+        if(!file_exists($fileName)) throw new HttpRequestException('Файла не существует');
+        $this->getConnection()->setUploadFile($fileName);
+
+        return $this;
+    }
+
+    /**
      * Get status message of the response
      *
      * @return string message
@@ -106,6 +136,30 @@ class HttpRequest
     private function append($url,$params)
     {
 	return $url.'?'.http_build_query($params);
+    }
+
+    static public function put($url,$params = null)
+    {
+        if ($params)
+            $url=$this->append($url,$params);
+
+        return new HttpRequest($url, HttpRequest::METHOD_PUT);
+    }
+
+    static public function delete($url,$params = null)
+    {
+        if ($params)
+            $url=$this->append($url,$params);
+
+        return new HttpRequest($url, HttpRequest::METHOD_DELETE);
+    }
+
+    static public function head($url,$params = null)
+    {
+        if ($params)
+            $url=$this->append($url,$params);
+
+        return new HttpRequest($url, HttpRequest::METHOD_HEAD);
     }
 
     /**
@@ -131,6 +185,7 @@ class HttpRequest
     }
 
     /**
+     * Eсли нужно передать файл, достаточно указать file_field => @/path/to/file/img.png
      *
      * @param Array|Object $fields
      * @return \HttpRequest
@@ -138,7 +193,7 @@ class HttpRequest
     public function form($fields)
     {
 	if($this->requestMethod == HttpRequest::METHOD_POST)
-	    $this->getConnection()->setPostFields(http_build_query($fields));
+	    $this->getConnection()->setPostFields($fields);
 
 	return $this;
     }
@@ -309,6 +364,10 @@ interface HttpURLConnection
     public function getResponseMessage();
 
     public function setPostFields($data);
+
+    public function setReceiveFile($file);
+
+    public function setUploadFile($fileName);
 }
 
 class CURLInterface implements HttpURLConnection
@@ -332,7 +391,8 @@ class CURLInterface implements HttpURLConnection
 	    CURLOPT_FOLLOWLOCATION	 => true,
 	    CURLOPT_HEADER		 => false,
 	    CURLOPT_HEADERFUNCTION	 => array($this, 'setHeaderFields'),
-	    CURLOPT_ENCODING => "");
+	    CURLOPT_ENCODING => "",
+        CURLOPT_NOPROGRESS => true);
 
 	if (array_key_exists('port', $url))
 	{
@@ -347,6 +407,13 @@ class CURLInterface implements HttpURLConnection
 	return $this->method;
     }
 
+    public function setUploadFile($fileName)
+    {
+        $this->options[CURLOPT_UPLOAD]=true;
+        $this->options[CURLOPT_INFILE]=fopen($file,"rb"); // TODO: проверку сделать
+        $this->options[CURLOPT_INFILESIZE]=filesize($file);
+    }
+
     public function setPostFields($data)
     {
 	$this->options[CURLOPT_POSTFIELDS]=$data;
@@ -359,11 +426,21 @@ class CURLInterface implements HttpURLConnection
 	switch ($this->method)
 	{
 	    case HttpRequest::METHOD_POST:
-		$this->options[CURLOPT_POST] = true;
-		$this->setPostFields(null);
+		  $this->options[CURLOPT_POST] = true;
+		  $this->setPostFields(null);
 		break;
+            case HttpRequest::METHOD_PUT:
+            $this->options[CURLOPT_PUT] = true;
+        break;
+            case HttpRequest::METHOD_HEAD:
+            $this->options[CURLOPT_NOBODY] = true;
+            break;
+
+            case HttpRequest::METHOD_DELETE:
+            $this->options[CURLOPT_CUSTOMREQUEST] = HttpRequest::METHOD_DELETE;
+            break;
 	    default:
-		$this->options[CURLOPT_HTTPGET] = true;
+		  $this->options[CURLOPT_HTTPGET] = true;
 	}
     }
 
@@ -416,6 +493,14 @@ class CURLInterface implements HttpURLConnection
 	return curl_setopt_array($this->curl, $this->options);
     }
 
+    public function setReceiveFile($file)
+    {
+        $this->options[CURLOPT_FILE]=$file;
+
+        if ($this->response == null) //TODO: сомневаюсь как то.
+            $this->getResponse();
+    }
+
     public function getHeaderField($name)
     {
 	if (empty($this->response_headers))
@@ -454,7 +539,10 @@ class CURLInterface implements HttpURLConnection
 
     function __destruct()
     {
-	curl_close($this->curl);
+    if(!empty($this->options[CURLOPT_INFILE])) 
+        fclose($this->options[CURLOPT_INFILE]);
+	
+    curl_close($this->curl);
     }
 
 }
@@ -464,8 +552,16 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try
 {
-    $response = HttpRequest::post("http://localhost/http/test.php?test")->body();
-    var_dump($response);
+   /* $fp=fopen("lol.jpg",'w');
+    HttpRequest::get("http://s.pikabu.ru/post_img/2013/07/12/7/1373621667_56317717.jpg")->receive($fp);
+    fclose($fp);
+    */
+
+    //$body=HttpRequest::delete("http://localhost/http/test.php")->send("some data")->body();
+    //$body=HttpRequest::post("http://localhost/http/test.php")->send("some=data")->body();
+    var_dump($body);
+
+
 } catch (HttpRequestException $e)
 {
     exit($e->getMessage());
