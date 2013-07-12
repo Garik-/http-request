@@ -103,6 +103,11 @@ class HttpRequest
 	return $this->getConnection()->getResponseMessage();
     }
 
+    private function append($url,$params)
+    {
+	return $url.'?'.http_build_query($params);
+    }
+
     /**
      *
      * @param string $url
@@ -111,11 +116,31 @@ class HttpRequest
      */
     static public function get($url, $params = null)
     {
-	if ($params != null)
-	{
-	    $url.='?'.http_build_query($params);
-	}
+	if ($params)
+	    $url=$this->append($url,$params);
+
 	return new HttpRequest($url, HttpRequest::METHOD_GET);
+    }
+
+    static public function post($url, $params=null)
+    {
+	if ($params)
+	    $url=$this->append($url,$params);
+
+	return new HttpRequest($url, HttpRequest::METHOD_POST);
+    }
+
+    /**
+     *
+     * @param Array|Object $fields
+     * @return \HttpRequest
+     */
+    public function form($fields)
+    {
+	if($this->requestMethod == HttpRequest::METHOD_POST)
+	    $this->getConnection()->setPostFields(http_build_query($fields));
+
+	return $this;
     }
 
     /**
@@ -208,7 +233,10 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 
     public static function create($url)
     {
-	return new CURLInterface($url);
+	$extensions=get_loaded_extensions();
+	
+	if(in_array('curl', $extensions))
+		return new CURLInterface($url);
     }
 
 }
@@ -223,7 +251,7 @@ class HttpRequestException extends Exception
  */
 interface HttpURLConnection
 {
-    
+
 
     function __construct(Array $url);
 
@@ -279,6 +307,8 @@ interface HttpURLConnection
      * @return string the response message.
      */
     public function getResponseMessage();
+
+    public function setPostFields($data);
 }
 
 class CURLInterface implements HttpURLConnection
@@ -301,7 +331,8 @@ class CURLInterface implements HttpURLConnection
 	$this->options = array(CURLOPT_RETURNTRANSFER	 => true,
 	    CURLOPT_FOLLOWLOCATION	 => true,
 	    CURLOPT_HEADER		 => false,
-	    CURLOPT_HEADERFUNCTION	 => array($this, 'setHeaderFields'));
+	    CURLOPT_HEADERFUNCTION	 => array($this, 'setHeaderFields'),
+	    CURLOPT_ENCODING => "");
 
 	if (array_key_exists('port', $url))
 	{
@@ -316,6 +347,11 @@ class CURLInterface implements HttpURLConnection
 	return $this->method;
     }
 
+    public function setPostFields($data)
+    {
+	$this->options[CURLOPT_POSTFIELDS]=$data;
+    }
+
     public function setRequestMethod($method)
     {
 	$this->method = $method;
@@ -324,6 +360,7 @@ class CURLInterface implements HttpURLConnection
 	{
 	    case HttpRequest::METHOD_POST:
 		$this->options[CURLOPT_POST] = true;
+		$this->setPostFields(null);
 		break;
 	    default:
 		$this->options[CURLOPT_HTTPGET] = true;
@@ -423,13 +460,11 @@ class CURLInterface implements HttpURLConnection
 }
 
 
-
-// ------------------------------------------------------------------------
 ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try
 {
-    $response = HttpRequest::get("http://www.google.com")->message();
+    $response = HttpRequest::post("http://localhost/http/test.php?test")->body();
     var_dump($response);
 } catch (HttpRequestException $e)
 {
