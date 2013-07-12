@@ -110,11 +110,7 @@ class HttpRequest
         return $this;
     }
 
-    public function send($string)
-    {
-        $this->getConnection()->setPostFields($string);
-        return $this;
-    }
+
     public function upload($fileName)
     {
         if(!file_exists($fileName)) throw new HttpRequestException('Файла не существует');
@@ -192,7 +188,7 @@ class HttpRequest
      */
     public function form($fields)
     {
-	if($this->requestMethod == HttpRequest::METHOD_POST)
+	
 	    $this->getConnection()->setPostFields($fields);
 
 	return $this;
