@@ -513,7 +513,7 @@ try {
     //$body=HttpRequest::delete("http://localhost/http/test.php")->send("some data")->body();
     //$body=HttpRequest::post("http://localhost/http/test.php")->send("some=data")->body();
     
-    $body=  HttpRequest::get("http://test.ru")->
+    
     var_dump($body);
 } catch (HttpRequestException $e) {
     exit($e->getMessage());
