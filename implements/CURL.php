@@ -141,20 +141,28 @@ class CURLInterface implements HttpURLConnection {
     private function exeption() {
         throw new HttpRequestException(curl_error($this->curl), curl_errno($this->curl));
     }
-    
+
     public function setFollowRedirects($followRedirects) {
-        $this->options[CURLOPT_FOLLOWLOCATION] = (boolean)$followRedirects;
+        $this->options[CURLOPT_FOLLOWLOCATION] = (boolean) $followRedirects;
     }
-    
+
     public function getConnectTimeout() {
-         return array_key_exists(CURLOPT_CONNECTTIMEOUT, $this->options) ? $this->options[CURLOPT_CONNECTTIMEOUT]*1000 : 0;
+        return array_key_exists(CURLOPT_CONNECTTIMEOUT, $this->options) ? $this->options[CURLOPT_CONNECTTIMEOUT] : 0;
     }
-    
+
     public function setConnectTimeout($timeout) {
-        $this->options[CURLOPT_CONNECTTIMEOUT]=$timeout/1000;
+        $this->options[CURLOPT_CONNECTTIMEOUT] = $timeout;
+    }
+
+    public function setReadTimeout($timeout) {
+        $this->options[CURLOPT_TIMEOUT] = $timeout;
     }
     
-                function __destruct() {
+    public function getReadTimeout() {
+        return array_key_exists(CURLOPT_TIMEOUT, $this->options) ? $this->options[CURLOPT_TIMEOUT] : 0;
+    }
+
+    function __destruct() {
         if (!empty($this->options[CURLOPT_INFILE]))
             fclose($this->options[CURLOPT_INFILE]);
 

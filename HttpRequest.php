@@ -13,7 +13,6 @@ class HttpRequest {
     const METHOD_PUT = "PUT";
     const METHOD_DELETE = "DELETE";
     const METHOD_HEAD = "HEAD";
-    
     const CONTENT_TYPE_JSON = "application/json";
 
     /**
@@ -85,7 +84,6 @@ class HttpRequest {
      * 'User-Agent' header name
      */
     const HEADER_USER_AGENT = "User-Agent";
-    
     const HTTP_OK = 200;
     const HTTP_CREATED = 201;
     const HTTP_INTERNAL_ERROR = 500;
@@ -232,6 +230,17 @@ class HttpRequest {
 
     public function connectTimeout($timeout) {
         $this->getConnection()->setConnectTimeout($timeout);
+        return $this;
+    }
+
+    /**
+     * Set read timeout on connection to given value
+     *
+     * @param timeout
+     * @return this request
+     */
+    public function readTimeout($timeout) {
+        $this->getConnection()->setReadTimeout($timeout);
         return $this;
     }
 
@@ -406,9 +415,12 @@ class DEFAULT_FACTORY implements HttpConnectionFactory {
 
     public static function create($url) {
         $basepath = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'implements' . DIRECTORY_SEPARATOR;
-        $extensions = get_loaded_extensions();
 
-        if (file_exists($basepath . 'CURL.php') && in_array('curl', $extensions)) {
+        if (function_exists('fsockopen') && file_exists($basepath . 'Socket.php')) {
+            require $basepath . 'Socket.php';
+            return new SocketInterface($url);
+        }
+        if (extension_loaded('curl') && file_exists($basepath . 'CURL.php')) {
             require $basepath . 'CURL.php';
             return new CURLInterface($url);
         }
@@ -489,32 +501,28 @@ interface HttpURLConnection {
     public function setFollowRedirects($followRedirects);
 
     /**
-     * Sets the maximum time in milliseconds to wait while connecting.
+     * Sets the maximum time in seconds to wait while connecting.
      * 
      * @param int $timeout
      */
     public function setConnectTimeout($timeout);
 
     /**
-     * Returns the connect timeout in milliseconds. (See {@link #setConnectTimeout}) 
+     * Returns the connect timeout in seconds. (See {@link #setConnectTimeout}) 
      * @return int
      */
     public function getConnectTimeout();
+
+    public function getReadTimeout();
+    
+    public function setReadTimeout($timeout);
 }
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try {
-    /* $fp=fopen("lol.jpg",'w');
-      HttpRequest::get("http://s.pikabu.ru/post_img/2013/07/12/7/1373621667_56317717.jpg")->receive($fp);
-      fclose($fp);
-     */
-
-    //$body=HttpRequest::delete("http://localhost/http/test.php")->send("some data")->body();
-    //$body=HttpRequest::post("http://localhost/http/test.php")->send("some=data")->body();
-    
-    
-    var_dump($body);
+    $get=HttpRequest::get("http://localhost/http/test.php");
+    print_r($get->headers());
 } catch (HttpRequestException $e) {
     exit($e->getMessage());
 }
