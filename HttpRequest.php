@@ -610,6 +610,12 @@ interface HttpURLConnection
      */
     public function getResponseMessage();
 
+    /**
+     * Все данные, передаваемые в HTTP POST-запросе. Для передачи файла, укажите перед именем файла @, а также используйте полный путь к файлу.
+     * При передаче файлов с префиксом @, $data должен быть массивом
+     * Если $data является массивом, заголовок Content-Type будет установлен в значение multipart/form-data
+     * @param Array|String $data
+     */
     public function setPostFields($data);
 
     public function setReceiveFile($file);
@@ -636,11 +642,11 @@ interface HttpURLConnection
     public function setReadTimeout($timeout);
 }
 
-/*ini_set('display_errors', 1);
+ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try {
-    $get=HttpRequest::get("http://localhost/http/test.php");
-    print_r($get->headers());
+    $get=HttpRequest::post("http://localhost/http/test.php")->form("test=lol");
+    print_r($get->body());
 } catch (HttpRequestException $e) {
     exit($e->getMessage());
-}*/
+}
