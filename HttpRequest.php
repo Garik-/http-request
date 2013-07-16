@@ -645,8 +645,9 @@ interface HttpURLConnection
 ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try {
-    $get=HttpRequest::post("http://localhost/http/test.php")->form("test=lol");
+    $get=HttpRequest::post("http://localhost/http/test.php")->form(array("test"=>'lol'));
     print_r($get->body());
 } catch (HttpRequestException $e) {
+    var_dump($e);
     exit($e->getMessage());
 }

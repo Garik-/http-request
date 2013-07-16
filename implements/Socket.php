@@ -5,7 +5,6 @@ class SocketInterface implements HttpURLConnection
 
     const MIN_RESPONSE_SIZE = 0x200;
     const STREAM_BLOCK_SIZE = 0x2000;
-
     const BOUNDARY = "00content0boundary00";
     const CONTENT_TYPE_MULTIPART = "multipart/form-data; boundary=00content0boundary00";
     const CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
@@ -98,7 +97,7 @@ class SocketInterface implements HttpURLConnection
     private function readResponse()
     { //TODO: возможно стоит использовать fread + проверять на ошибку
 	$offset = 0;
-	$headers = explode("\r\n", stream_get_contents($this->socket, $this::MIN_RESPONSE_SIZE));
+	$headers = explode(self::CRLF, stream_get_contents($this->socket, self::MIN_RESPONSE_SIZE));
 	foreach ($headers as $header)
 	{
 	    $offset++;
@@ -138,19 +137,19 @@ class SocketInterface implements HttpURLConnection
     private function fwrite_stream($fp, $stream)
     {
 	// TODO: не факт что так лучше...
-        return stream_copy_to_stream($stream,$fp);
+	return stream_copy_to_stream($stream, $fp);
     }
 
     private function getRequest()
     {
-	$request = $this->method.' '.$this->url['path']." HTTP/1.1".$this::CRLF;
+	$request = $this->method.' '.$this->url['path']." HTTP/1.1".self::CRLF;
 	$this->headers['Host'] = $this->url['host'];
 	foreach ($this->headers as $name => $value)
 	{
-	    $request.=$name.': '.$value.$this::CRLF;
+	    $request.=$name.': '.$value.self::CRLF;
 	}
 
-	$request.=$this::CRLF;
+	$request.=self::CRLF;
 
 	return $request;
     }
@@ -186,14 +185,69 @@ class SocketInterface implements HttpURLConnection
 	    $this->multipart = false;
 	    $this->post_fields = $data;
 	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, strlen($this->post_fields));
-	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_TYPE, $this::CONTENT_TYPE_FORM);
+	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_TYPE, self::CONTENT_TYPE_FORM);
 	}
 
 	if (is_array($data))
 	{
 	    $this->multipart = true;
-	    $this->post_fields = fopen("post.txt", 'w');
+	    $this->post_fields = fopen("post.txt", 'w+'); // TODO: переделать на временный файл
+
+	    $lenght = 0;
+	    foreach ($data as $name => $value)
+	    {
+		if ($value[0] == "@")
+		{
+		    $filepath = mb_substr($value, 1);
+
+		    $input = fopen($filepath, 'r');
+		    if (!$input)
+			throw new HttpRequestException("Невозможно прочитать файл " + $filepath);
+
+		    // TODO: надо $filename корректный передавать... что бы не дать подделать заголовки...
+		    $lenght+=$this->fwrite_string($this->post_fields, $this->partHeader($name, $filepath, $this->getContentType($filepath)));
+		    $lenght+=$this->fwrite_stream($this->post_fields, $input);
+
+		    fclose($input);
+		}
+		else
+		{
+		    $lenght+=$this->fwrite_string($this->post_fields, $this->partHeader($name));
+		    $lenght+=$this->fwrite_string($this->post_fields, $value.self::CRLF);
+		}
+	    }
+	    rewind($this->post_fields);
+
+	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, $lenght);
+	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_TYPE, self::CONTENT_TYPE_MULTIPART);
 	}
+    }
+
+    private function getContentType($filepath)
+    {
+	if (!class_exists('finfo'))
+	    return "application/octet-stream";
+	$info = new finfo(FILEINFO_MIME_TYPE);
+	return $info->file($filepath);
+    }
+
+    private function partHeader($name, $filename = null, $contentType = null)
+    {
+	$headers['Content-Disposition'] = 'form-data; name="'.$name.'"'.($filename ? '; filename="'.$filename.'"' : '');
+
+	if ($contentType)
+	{
+	    $headers[HttpRequest::HEADER_CONTENT_TYPE] = $contentType;
+	    $headers['Content-Transfer-Encoding'] = 'binary'; // TODO: а может и не надо
+	}
+
+	$part = '--'.self::BOUNDARY.self::CRLF;
+	foreach ($headers as $name => $value)
+	    $part.=$name.': '.$value.self::CRLF;
+
+	$part.=self::CRLF;
+
+	return $part;
     }
 
     public function setReceiveFile($file)
@@ -242,4 +296,5 @@ class SocketInterface implements HttpURLConnection
 
 	return $length;
     }
+
 }

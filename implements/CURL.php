@@ -1,5 +1,5 @@
 <?php
-
+// TODO: нужно проверять версию CURL не все поля поддерживаются.
 class CURLInterface implements HttpURLConnection {
 
     private $curl;
@@ -157,7 +157,7 @@ class CURLInterface implements HttpURLConnection {
     public function setReadTimeout($timeout) {
         $this->options[CURLOPT_TIMEOUT] = $timeout;
     }
-    
+
     public function getReadTimeout() {
         return array_key_exists(CURLOPT_TIMEOUT, $this->options) ? $this->options[CURLOPT_TIMEOUT] : 0;
     }
