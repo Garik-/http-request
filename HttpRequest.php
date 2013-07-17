@@ -535,6 +535,7 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 	    require_once $basepath.'Socket.php';
 	    return new SocketInterface($url);
 	}
+
 	if (extension_loaded('curl') && file_exists($basepath.'CURL.php'))
 	{
 	    require_once $basepath.'CURL.php';
@@ -644,10 +645,15 @@ interface HttpURLConnection
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
-try {
-    $get=HttpRequest::post("http://localhost/http/test.php")->form(array("test"=>'lol'));
+try
+{
+    $get = HttpRequest::post("http://localhost/http/test.php")->form(array(
+	"test"	 => 'lol',
+	"file"	 => '@/var/www/http/img.jpg'
+    ));
     print_r($get->body());
-} catch (HttpRequestException $e) {
+} catch (HttpRequestException $e)
+{
     var_dump($e);
     exit($e->getMessage());
 }

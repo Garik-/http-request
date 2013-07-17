@@ -191,22 +191,24 @@ class SocketInterface implements HttpURLConnection
 	if (is_array($data))
 	{
 	    $this->multipart = true;
-	    $this->post_fields = fopen("post.txt", 'w+'); // TODO: переделать на временный файл
+	    $this->post_fields = tmpfile();
 
 	    $lenght = 0;
 	    foreach ($data as $name => $value)
 	    {
-		if ($value[0] == "@")
+		if ($value[0] == '@')
 		{
 		    $filepath = mb_substr($value, 1);
+		    if (!file_exists($filepath))
+			throw new HttpRequestException("Файл " + $filepath + " не существует");
 
-		    $input = fopen($filepath, 'r');
+		    $input = fopen($filepath, 'rb');
 		    if (!$input)
 			throw new HttpRequestException("Невозможно прочитать файл " + $filepath);
 
-		    // TODO: надо $filename корректный передавать... что бы не дать подделать заголовки...
 		    $lenght+=$this->fwrite_string($this->post_fields, $this->partHeader($name, $filepath, $this->getContentType($filepath)));
 		    $lenght+=$this->fwrite_stream($this->post_fields, $input);
+		    $lenght+=$this->fwrite_string($this->post_fields, self::CRLF);
 
 		    fclose($input);
 		}
@@ -216,6 +218,8 @@ class SocketInterface implements HttpURLConnection
 		    $lenght+=$this->fwrite_string($this->post_fields, $value.self::CRLF);
 		}
 	    }
+
+	    $lenght+=$this->fwrite_string($this->post_fields, '--'.self::BOUNDARY.'--'.self::CRLF);
 	    rewind($this->post_fields);
 
 	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, $lenght);
@@ -225,10 +229,10 @@ class SocketInterface implements HttpURLConnection
 
     private function getContentType($filepath)
     {
-	if (!class_exists('finfo'))
+	if (!function_exists('finfo_open') || ($info = finfo_open(FILEINFO_MIME)) === false)
 	    return "application/octet-stream";
-	$info = new finfo(FILEINFO_MIME_TYPE);
-	return $info->file($filepath);
+
+	return finfo_file($info, $filepath);
     }
 
     private function partHeader($name, $filename = null, $contentType = null)
