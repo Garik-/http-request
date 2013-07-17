@@ -34,8 +34,8 @@ class CURLInterface implements HttpURLConnection {
 
     public function setUploadFile($fileName) {
         $this->options[CURLOPT_UPLOAD] = true;
-        $this->options[CURLOPT_INFILE] = fopen($file, "rb"); // TODO: проверку сделать
-        $this->options[CURLOPT_INFILESIZE] = filesize($file);
+        $this->options[CURLOPT_INFILE] = fopen($fileName, "rb"); // TODO: проверку сделать
+        $this->options[CURLOPT_INFILESIZE] = filesize($fileName);
     }
 
     public function setPostFields($data) {

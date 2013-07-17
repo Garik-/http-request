@@ -4,7 +4,6 @@ class SocketInterface implements HttpURLConnection
 {
 
     const MIN_RESPONSE_SIZE = 0x200;
-    const STREAM_BLOCK_SIZE = 0x2000;
     const BOUNDARY = "00content0boundary00";
     const CONTENT_TYPE_MULTIPART = "multipart/form-data; boundary=00content0boundary00";
     const CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
@@ -271,7 +270,8 @@ class SocketInterface implements HttpURLConnection
 
     public function setUploadFile($fileName)
     {
-
+	$this->setRequestMethod(HttpRequest::METHOD_PUT);
+	
     }
 
     public function setReadTimeout($timeout)

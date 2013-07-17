@@ -227,6 +227,13 @@ class HttpRequest
 	return $this;
     }
 
+    /**
+     * Загрузка файла на сервер методом PUT
+     *
+     * @param string $fileName
+     * @return \HttpRequest
+     * @throws HttpRequestException
+     */
     public function upload($fileName)
     {
 	if (!file_exists($fileName))
