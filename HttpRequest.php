@@ -129,15 +129,19 @@ class HttpRequest
      */
     private $connection;
 
+    /**
+     *
+     * @param string $url
+     * @param string $method
+     * @param array|object $params
+     */
     function __construct($url, $method, $params = null)
     {
-
 	if ($params)
 	    $url = $this->append($url, $params);
 
 	$this->url = parse_url($url);
 	$this->requestMethod = $method;
-
 	$this->setConnectionFactory();
     }
 
@@ -626,8 +630,16 @@ interface HttpURLConnection
      */
     public function setPostFields($data);
 
+    /**
+     * Записать ответ сервера в файл
+     * @param stream|file $file
+     */
     public function setReceiveFile($file);
 
+    /**
+     * Установить файл для загрузки методом PUT
+     * @param type $fileName
+     */
     public function setUploadFile($fileName);
 
     public function setFollowRedirects($followRedirects);
@@ -650,6 +662,7 @@ interface HttpURLConnection
     public function setReadTimeout($timeout);
 }
 
+/*
 ini_set('display_errors', 1);
 error_reporting(E_ALL | E_STRICT);
 try
@@ -663,4 +676,4 @@ try
 {
     var_dump($e);
     exit($e->getMessage());
-}
+}*/

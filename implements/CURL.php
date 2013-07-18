@@ -74,6 +74,9 @@ class CURLInterface implements HttpURLConnection {
         if ($this->response === false)
             $this->exeption();
 
+	if($this->response === true) // пустой ответ сервера
+	    $this->response = null;
+
         return $this->response;
     }
 

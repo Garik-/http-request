@@ -20,14 +20,13 @@ class SocketInterface implements HttpURLConnection
     private $socket;
     private $headers;
     private $post_fields;
-    private $multipart;
+    private $receive_file;
 
     public function __construct(array $url)
     {
 	$this->url = $url;
 	$this->response_headers = array();
 	$this->headers = array("Connection" => "close");
-	$this->multipart = false;
     }
 
     public function __destruct()
@@ -116,8 +115,16 @@ class SocketInterface implements HttpURLConnection
 		$this->response_headers[substr($header, 0, $pos++)] = trim(substr($header, $pos));
 	}
 
-	$this->response = implode('', array_slice($headers, $offset));
-	$this->response.= stream_get_contents($this->socket);
+	if (is_resource($this->receive_file))
+	{
+	    $this->fwrite_string($this->receive_file, implode('', array_slice($headers, $offset)));
+	    $this->fwrite_stream($this->receive_file, $this->socket);
+	}
+	else
+	{
+	    $this->response = implode('', array_slice($headers, $offset));
+	    $this->response.= stream_get_contents($this->socket);
+	}
     }
 
     private function fwrite_string($fp, $string)
@@ -141,7 +148,7 @@ class SocketInterface implements HttpURLConnection
 
     private function getRequest()
     {
-	$request = $this->method.' '.$this->url['path']." HTTP/1.1".self::CRLF;
+	$request = $this->method.' '.(!empty($this->url['path']) ? $this->url['path'] : '/').(!empty($this->url['query']) ? '?'.$this->url['query'] : '')." HTTP/1.1".self::CRLF;
 	$this->headers['Host'] = $this->url['host'];
 	foreach ($this->headers as $name => $value)
 	{
@@ -181,7 +188,6 @@ class SocketInterface implements HttpURLConnection
     {
 	if (is_string($data))
 	{
-	    $this->multipart = false;
 	    $this->post_fields = $data;
 	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, strlen($this->post_fields));
 	    $this->setRequestProperty(HttpRequest::HEADER_CONTENT_TYPE, self::CONTENT_TYPE_FORM);
@@ -189,7 +195,6 @@ class SocketInterface implements HttpURLConnection
 
 	if (is_array($data))
 	{
-	    $this->multipart = true;
 	    $this->post_fields = tmpfile();
 
 	    $lenght = 0;
@@ -255,7 +260,7 @@ class SocketInterface implements HttpURLConnection
 
     public function setReceiveFile($file)
     {
-
+	$this->receive_file = $file;
     }
 
     public function setRequestMethod($method)
@@ -271,7 +276,11 @@ class SocketInterface implements HttpURLConnection
     public function setUploadFile($fileName)
     {
 	$this->setRequestMethod(HttpRequest::METHOD_PUT);
+	$this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, filesize($fileName));
 	
+	$this->post_fields = fopen($fileName, 'r');
+	if (!$this->post_fields)
+	    throw new HttpRequestException("Невозможно прочитать файл " + $fileName);
     }
 
     public function setReadTimeout($timeout)

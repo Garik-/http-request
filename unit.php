@@ -13,13 +13,6 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
 	$this->assertEquals('GET', $http->method());
     }
 
-    public function testPost()
-    {
-	$http = HttpRequest::post("http://localhost/http/test.php");
-	$this->assertInstanceOf('HttpRequest', $http);
-	$this->assertEquals('POST', $http->method());
-    }
-
     public function testPut()
     {
 	$http = HttpRequest::put("http://localhost/http/test.php");
@@ -60,6 +53,47 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
 	$http = HttpRequest::get("http://localhost/http/test.php")->header("Connection", "keep-alive")->readTimeout(1);
 	$this->assertEquals("keep-alive", strtolower($http->header("Connection")));
 	unset($http);
+    }
+
+    /**
+     * Проверяем передачу POST переменных, GET переменных в URL и файла.
+     */
+    public function testPost()
+    {
+	$image = sys_get_temp_dir().DIRECTORY_SEPARATOR.'test_img.jpg';
+
+	// передача multipart/form-data
+	$http = HttpRequest::post("http://localhost/http/test.php", array("post" => 1))->form(array("param1" => "value", "param2" => "@/var/www/http/img.jpg"));
+	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertEquals('POST', $http->method());
+	$this->assertEquals('param1=value', $http->body());
+	$this->assertFileExists($image);
+	$this->assertFileEquals('/var/www/http/img.jpg', $image);
+
+	unset($http);
+
+	// проверяем передачу application/x-www-form-urlencoded
+	$http = HttpRequest::post("http://localhost/http/test.php?post=1")->form("key=value&param=test");
+	$this->assertEquals('key=value&param=test', $http->body());
+    }
+
+    public function testReceive() // тестируем получение данных в файл
+    {
+	$file = fopen(sys_get_temp_dir().DIRECTORY_SEPARATOR.'test_file.txt', 'wb');
+	if ($file)
+	{
+	    $http = HttpRequest::get("http://localhost/http/test.php")->receive($file);
+	    $this->assertTrue($http->ok());
+	    $this->assertEmpty($http->body()); // тело ответа должно быть пустым
+	    fclose($file);
+	}
+    }
+
+    public function testUpload()
+    {
+	$http = HttpRequest::put("http://localhost/http/test.php?put=1")->upload('/var/www/http/img.jpg');
+	$this->assertTrue($http->ok());
+	$this->assertFileEquals('/var/www/http/img.jpg', $http->body()); // в результате вернется путь до файла куда записалось все.
     }
 
 }
