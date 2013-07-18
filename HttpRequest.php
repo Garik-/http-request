@@ -116,6 +116,11 @@ class HttpRequest
      */
     const HTTP_NOT_MODIFIED = 304;
 
+    /**
+     * Numeric status code, 301 Moved permanently
+     */
+    const HTTP_MOVED_PERM = 301;
+
     private $url;
     private $requestMethod;
 
@@ -141,7 +146,7 @@ class HttpRequest
 	    $url = $this->append($url, $params);
 
 	$this->url = parse_url($url);
-	$this->requestMethod = $method;
+	$this->requestMethod = (string) $method;
 	$this->setConnectionFactory();
     }
 
@@ -317,6 +322,10 @@ class HttpRequest
 	return new HttpRequest($url, HttpRequest::METHOD_POST, $params);
     }
 
+    /**
+     *
+     * @return array
+     */
     public function url()
     {
 	return $this->url;
@@ -355,15 +364,15 @@ class HttpRequest
     /**
      * Устанавилвает заголовки запроса к серверу, либо возвращает заголовок ответа сервера по имени.
      *
-     * @param type $name имя поля заголовка
-     * @param type $value новое значение
+     * @param string $name имя поля заголовка
+     * @param string $value новое значение
      * @return \HttpRequest если $value было передано или string значение заголовка ответа сервера
      */
     public function header($name, $value = null)
     {
 	if ($value != null)
 	{
-	    $this->getConnection()->setRequestProperty($name, $value);
+	    $this->getConnection()->setRequestProperty((string) $name, (string) $value);
 	    return $this;
 	}
 
@@ -407,7 +416,7 @@ class HttpRequest
 
     public function code()
     {
-	return $this->getConnection()->getResponseCode();
+	return (integer) $this->getConnection()->getResponseCode();
     }
 
     public function body()
@@ -512,7 +521,7 @@ class HttpRequest
      */
     public function followRedirects($followRedirects)
     {
-	$this->getConnection()->setFollowRedirects($followRedirects);
+	$this->getConnection()->setFollowRedirects((boolean) $followRedirects);
 	return $this;
     }
 
@@ -642,6 +651,10 @@ interface HttpURLConnection
      */
     public function setUploadFile($fileName);
 
+    /**
+     *
+     * @param boolean $followRedirects
+     */
     public function setFollowRedirects($followRedirects);
 
     /**

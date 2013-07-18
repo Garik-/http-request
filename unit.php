@@ -96,4 +96,15 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
 	$this->assertFileEquals('/var/www/http/img.jpg', $http->body()); // в результате вернется путь до файла куда записалось все.
     }
 
+    public function testfollowRedirects()
+    {
+	$http = HttpRequest::get("http://google.com/?test=get");
+	$this->assertEquals(HttpRequest::HTTP_MOVED_PERM, $http->code());
+	//$location=parse_url($http->header(HttpRequest::HEADER_LOCATION));
+
+	$http = HttpRequest::get("http://google.com/?test=get")->followRedirects(true);
+	$this->assertTrue($http->ok());
+	//$this->assertEquals($location, $http->url());
+    }
+
 }

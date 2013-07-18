@@ -21,12 +21,13 @@ class SocketInterface implements HttpURLConnection
     private $headers;
     private $post_fields;
     private $receive_file;
+    private $follow_redirects;
 
     public function __construct(array $url)
     {
 	$this->url = $url;
-	$this->response_headers = array();
 	$this->headers = array("Connection" => "close");
+	$this->connect_timeout = ini_get("default_socket_timeout");
     }
 
     public function __destruct()
@@ -75,6 +76,9 @@ class SocketInterface implements HttpURLConnection
 	if ($this->response != null)
 	    return $this->response;
 
+	if(is_resource($this->socket)) // при повторном обращении если follow_redirects
+	    fclose($this->socket);
+
 	$this->socket = fsockopen($this->url['host'], !empty($this->url['port']) ? $this->url['port'] : 80, $errno, $errstr, $this->connect_timeout);
 	if (!$this->socket)
 	    throw new HttpRequestException($errstr, $errno);
@@ -95,6 +99,8 @@ class SocketInterface implements HttpURLConnection
     private function readResponse()
     { //TODO: возможно стоит использовать fread + проверять на ошибку
 	$offset = 0;
+	$this->response_headers = array();
+
 	$headers = explode(self::CRLF, stream_get_contents($this->socket, self::MIN_RESPONSE_SIZE));
 	foreach ($headers as $header)
 	{
@@ -113,6 +119,13 @@ class SocketInterface implements HttpURLConnection
 	    $pos = strpos($header, ':');
 	    if ($pos !== false)
 		$this->response_headers[substr($header, 0, $pos++)] = trim(substr($header, $pos));
+	}
+
+	if($this->follow_redirects == true && array_key_exists(HttpRequest::HEADER_LOCATION, $this->response_headers))
+	{
+		$this->url=parse_url($this->response_headers[HttpRequest::HEADER_LOCATION]);
+		$this->response=$this->getResponse();
+		return; // остальная часть ответа сервера нам не нужна.
 	}
 
 	if (is_resource($this->receive_file))
@@ -181,7 +194,7 @@ class SocketInterface implements HttpURLConnection
 
     public function setFollowRedirects($followRedirects)
     {
-
+	$this->follow_redirects=$followRedirects;
     }
 
     public function setPostFields($data)
@@ -277,7 +290,7 @@ class SocketInterface implements HttpURLConnection
     {
 	$this->setRequestMethod(HttpRequest::METHOD_PUT);
 	$this->setRequestProperty(HttpRequest::HEADER_CONTENT_LENGTH, filesize($fileName));
-	
+
 	$this->post_fields = fopen($fileName, 'r');
 	if (!$this->post_fields)
 	    throw new HttpRequestException("Невозможно прочитать файл " + $fileName);
