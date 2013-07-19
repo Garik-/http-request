@@ -208,6 +208,8 @@ class HttpRequest
 	{
 	    $this->connectionFactory = $connectionFactory;
 	}
+
+	return $this;
     }
 
     /**
