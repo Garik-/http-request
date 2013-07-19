@@ -9,6 +9,10 @@ class SocketInterface implements HttpURLConnection
     const CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
     const CRLF = "\r\n";
 
+    const ERROR_FILE_READ="Невозможно прочитать файл %s";
+    const ERROR_FILE_EXIST="Файла %s не существует";
+    const ERROR_SEND="Невозможно передать данные";
+
     private $response;
     private $response_code;
     private $response_message;
@@ -26,8 +30,9 @@ class SocketInterface implements HttpURLConnection
     public function __construct(array $url)
     {
 	$this->url = $url;
-	$this->headers = array("Connection" => "close");
+	$this->headers = array();
 	$this->connect_timeout = ini_get("default_socket_timeout");
+	$this->setRequestProperty(HttpRequest::HEADER_CONNECTION, "close");
     }
 
     public function __destruct()
@@ -217,11 +222,11 @@ class SocketInterface implements HttpURLConnection
 		{
 		    $filepath = mb_substr($value, 1);
 		    if (!file_exists($filepath))
-			throw new HttpRequestException("Файл " + $filepath + " не существует");
+			throw new HttpRequestException(sprintf(self::ERROR_FILE_EXIST,$filepath));
 
 		    $input = fopen($filepath, 'rb');
 		    if (!$input)
-			throw new HttpRequestException("Невозможно прочитать файл " + $filepath);
+			throw new HttpRequestException(sprintf(self::ERROR_FILE_READ,$filepath));
 
 		    $lenght+=$this->fwrite_string($this->post_fields, $this->partHeader($name, $filepath, $this->getContentType($filepath)));
 		    $lenght+=$this->fwrite_stream($this->post_fields, $input);
@@ -293,7 +298,7 @@ class SocketInterface implements HttpURLConnection
 
 	$this->post_fields = fopen($fileName, 'r');
 	if (!$this->post_fields)
-	    throw new HttpRequestException("Невозможно прочитать файл " + $fileName);
+	    throw new HttpRequestException(sprintf(self::ERROR_FILE_READ,$fileName));
     }
 
     public function setReadTimeout($timeout)
@@ -318,7 +323,7 @@ class SocketInterface implements HttpURLConnection
 	    $length = $this->fwrite_stream($this->socket, $input);
 
 	if (!$length)
-	    throw new HttpRequestException("Невозможно передать данные");
+	    throw new HttpRequestException(self::ERROR_SEND);
 
 	return $length;
     }

@@ -77,6 +77,11 @@ class HttpRequest
     const HEADER_ACCEPT_ENCODING = "Accept-Encoding";
 
     /**
+     * 'Connection' header name
+     */
+    const HEADER_CONNECTION = "Connection";
+
+    /**
      * 'Cache-Control' header name
      */
     const HEADER_CACHE_CONTROL = "Cache-Control";
