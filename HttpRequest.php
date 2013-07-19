@@ -1,19 +1,64 @@
 <?php
 
 /**
- * Попытка сделать клон библиотеки Http Request https://github.com/kevinsawicki/http-request
+ * Copyright (c) 2013 Gar|k <garik.djan@gmail.com>
+ * http://c0dedgarik.blogspot.ru/
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * Реализация интерфейса библиотеки Http Request на PHP
+ * https://github.com/kevinsawicki/http-request
  *
  * @author Gar|k
  * @version 0.1
  */
 class HttpRequest
 {
+    /**
+     * 'GET' request method
+     */
 
     const METHOD_GET = "GET";
+
+    /**
+     * 'POST' request method
+     */
     const METHOD_POST = "POST";
+
+    /**
+     * 'PUT' request method
+     */
     const METHOD_PUT = "PUT";
+
+    /**
+     * 'DELETE' request method
+     */
     const METHOD_DELETE = "DELETE";
+
+    /**
+     * 'HEAD' request method
+     */
     const METHOD_HEAD = "HEAD";
+
+    /**
+     * 'application/json' content type header value
+     */
     const CONTENT_TYPE_JSON = "application/json";
 
     /**
@@ -150,6 +195,9 @@ class HttpRequest
 	$this->setConnectionFactory();
     }
 
+    /**
+     * Specify the {@link ConnectionFactory} used to create new requests.
+     */
     public function setConnectionFactory(HttpConnectionFactory $connectionFactory = null)
     {
 	if ($connectionFactory == null)
@@ -263,6 +311,7 @@ class HttpRequest
     }
 
     /**
+     * Добавляет параметры из объекта/массива $params к основному URL
      *
      * @param string $url
      * @param array|object $params
@@ -274,6 +323,7 @@ class HttpRequest
     }
 
     /**
+     * Start a 'PUT' request to the given URL
      *
      * @param string $url
      * @param array|object $params
@@ -285,6 +335,7 @@ class HttpRequest
     }
 
     /**
+     * Start a 'DELETE' request to the given URL
      *
      * @param string $url
      * @param array|object $params
@@ -296,6 +347,7 @@ class HttpRequest
     }
 
     /**
+     * Start a 'HEAD' request to the given URL
      *
      * @param string $url
      * @param array|object $params
@@ -307,6 +359,7 @@ class HttpRequest
     }
 
     /**
+     * Start a 'GET' request to the given URL
      *
      * @param string $url
      * @param object/Array $params
@@ -317,20 +370,35 @@ class HttpRequest
 	return new HttpRequest($url, HttpRequest::METHOD_GET, $params);
     }
 
+     /**
+     * Start a 'POST' request to the given URL
+     *
+     * @param string $url
+     * @param object/Array $params
+     * @return \HttpRequest
+     */
+
     static public function post($url, $params = null)
     {
 	return new HttpRequest($url, HttpRequest::METHOD_POST, $params);
     }
 
     /**
+     * Get the {@link URL} of this request's connection
      *
-     * @return array
+     * @return array request URL
      */
     public function url()
     {
 	return $this->url;
     }
 
+    /**
+     * Set connect timeout on connection to given value
+     *
+     * @param float $timeout
+     * @return \HttpRequest
+     */
     public function connectTimeout($timeout)
     {
 	$this->getConnection()->setConnectTimeout($timeout);
@@ -399,41 +467,91 @@ class HttpRequest
 	return $this;
     }
 
-    public function accept($accept)
+    /**
+     * Set the 'Accept' header to given value
+     * or get header from the response
+     *
+     * @param string $accept
+     * @return \HttpRequest
+     */
+    public function accept($accept = null)
     {
 	return $this->header(HttpRequest::HEADER_ACCEPT, $accept);
     }
 
+    /**
+     * Set the 'Content-Type' request header to the given value
+     * or get header from the response
+     *
+     * @param string $contentType
+     * @return \HttpRequest
+     */
     public function contentType($contentType = null)
     {
 	return $this->header(HttpRequest::HEADER_CONTENT_TYPE, $contentType);
     }
 
+    /**
+     * Set the 'Accept' header to 'application/json'
+     *
+     * @return \HttpRequest
+     */
     public function acceptJson()
     {
 	return $this->accept(HttpRequest::CONTENT_TYPE_JSON);
     }
 
+    /**
+     * Get the status code of the response
+     *
+     * @return integer
+     */
     public function code()
     {
 	return (integer) $this->getConnection()->getResponseCode();
     }
 
+    /**
+     * Get response as {@link String}
+     *
+     * @return string response, null on empty
+     */
     public function body()
     {
 	return $this->getConnection()->getResponse();
     }
 
+    /**
+     * Set the 'Content-Length' request header to the given value
+     * or get header from the response
+     *
+     * @param integer $contentLength
+     * @return \HttpRequest
+     */
     public function contentLength($contentLength = null)
     {
-	return $this->header(HttpRequest::HEADER_CONTENT_LENGTH, $contentLength);
+	return $this->header(HttpRequest::HEADER_CONTENT_LENGTH, (integer) $contentLength);
     }
 
+    /**
+     * Set the 'User-Agent' header to given value
+     * or get header from the response
+     *
+     * @param string $userAgent
+     * @return \HttpRequest
+     */
     public function userAgent($userAgent = null)
     {
 	return $this->header(HttpRequest::HEADER_USER_AGENT, $userAgent);
     }
 
+    /**
+     * Set the 'Referer' header to given value
+     * or get header from the response
+     *
+     * @param string $referer
+     * @return \HttpRequest
+     */
     public function referer($referer = null)
     {
 	return $this->header(HttpRequest::HEADER_REFERER, $referer);
@@ -674,19 +792,3 @@ interface HttpURLConnection
 
     public function setReadTimeout($timeout);
 }
-
-/*
-ini_set('display_errors', 1);
-error_reporting(E_ALL | E_STRICT);
-try
-{
-    $get = HttpRequest::post("http://localhost/http/test.php")->form(array(
-	"test"	 => 'lol',
-	"file"	 => '@/var/www/http/img.jpg'
-    ));
-    print_r($get->body());
-} catch (HttpRequestException $e)
-{
-    var_dump($e);
-    exit($e->getMessage());
-}*/
