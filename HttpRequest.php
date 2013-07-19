@@ -379,14 +379,13 @@ class HttpRequest
 	return new HttpRequest($url, HttpRequest::METHOD_GET, $params);
     }
 
-     /**
+    /**
      * Start a 'POST' request to the given URL
      *
      * @param string $url
      * @param object/Array $params
      * @return \HttpRequest
      */
-
     static public function post($url, $params = null)
     {
 	return new HttpRequest($url, HttpRequest::METHOD_POST, $params);
@@ -566,16 +565,35 @@ class HttpRequest
 	return $this->header(HttpRequest::HEADER_REFERER, $referer);
     }
 
+    /**
+     * Set the 'Accept-Encoding' header to given value
+     * or get header from the response
+     *
+     * @param string $referer
+     * @return \HttpRequest
+     */
     public function acceptEncoding($acceptEncoding = null)
     {
 	return $this->header(HttpRequest::HEADER_ACCEPT_ENCODING, $acceptEncoding);
     }
 
+    /**
+     * Set the 'Accept-Charset' header to given value
+     * or get header from the response
+     *
+     * @param string $referer
+     * @return \HttpRequest
+     */
     public function acceptCharset($acceptCharset = null)
     {
 	return $this->header(HttpRequest::HEADER_ACCEPT_CHARSET, $acceptCharset);
     }
 
+    /**
+     * Get the 'Content-Encoding' header from the response
+     *
+     * @return \HttpRequest
+     */
     public function contentEncoding()
     {
 	return $this->header(HttpRequest::HEADER_CONTENT_ENCODING);
@@ -594,7 +612,7 @@ class HttpRequest
     /**
      * Get the 'Date' header from the response
      *
-     * @return date value, -1 on failures
+     * @return date value
      */
     public function date()
     {
@@ -611,6 +629,11 @@ class HttpRequest
 	return $this->header(HttpRequest::HEADER_CACHE_CONTROL);
     }
 
+    /**
+     * Get the 'Expires' header from the response
+     *
+     * @return expires value
+     */
     public function expires()
     {
 	return $this->header(HttpRequest::HEADER_EXPIRES);
@@ -619,13 +642,18 @@ class HttpRequest
     /**
      * Get the 'Last-Modified' header from the response
      *
-     * @return last modified value, -1 on failures
+     * @return last modified value
      */
     public function lastModified()
     {
 	return $this->header(HttpRequest::HEADER_LAST_MODIFIED);
     }
 
+    /**
+     * Get underlying connection
+     *
+     * @return connection
+     */
     public function getConnection()
     {
 	if ($this->connection == null)
@@ -642,6 +670,8 @@ class HttpRequest
     }
 
     /**
+     * Set whether or not the underlying connection should follow redirects in
+     * the response.
      *
      * @param boolean $followRedirects
      * @return \HttpRequest
@@ -797,7 +827,18 @@ interface HttpURLConnection
      */
     public function getConnectTimeout();
 
+    /**
+     * Returns the read timeout in seconds, or 0 if reads never timeout.
+     * @return int
+     */
     public function getReadTimeout();
+
+    /**
+     * Sets the maximum time to wait for an input stream read to complete before
+     * giving up.
+     *
+     * @param int $timeout in seconds
+     */
 
     public function setReadTimeout($timeout);
 }
