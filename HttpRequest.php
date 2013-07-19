@@ -1,8 +1,12 @@
 <?php
 
 /**
- * Copyright (c) 2013 Gar|k <garik.djan@gmail.com>
- * http://c0dedgarik.blogspot.ru/
+ * @author Gar|k <garik.djan@gmail.com>
+ * @copyright (c) 2013, http://c0dedgarik.blogspot.ru/
+ * @version 0.1
+ *
+ * Реализация интерфейса библиотеки Http Request на PHP
+ * https://github.com/kevinsawicki/http-request
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -22,11 +26,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- * Реализация интерфейса библиотеки Http Request на PHP
- * https://github.com/kevinsawicki/http-request
- *
- * @author Gar|k
- * @version 0.1
  */
 class HttpRequest
 {
@@ -707,16 +706,17 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
     {
 	$basepath = dirname(__FILE__).DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR;
 
-	if (function_exists('fsockopen') && file_exists($basepath.'Socket.php'))
-	{
-	    require_once $basepath.'Socket.php';
-	    return new SocketInterface($url);
-	}
-
+	// предпочтение отдается библиотеке CURL
 	if (extension_loaded('curl') && file_exists($basepath.'CURL.php'))
 	{
 	    require_once $basepath.'CURL.php';
 	    return new CURLInterface($url);
+	}
+
+	if (function_exists('fsockopen') && file_exists($basepath.'Socket.php'))
+	{
+	    require_once $basepath.'Socket.php';
+	    return new SocketInterface($url);
 	}
     }
 
@@ -839,6 +839,5 @@ interface HttpURLConnection
      *
      * @param int $timeout in seconds
      */
-
     public function setReadTimeout($timeout);
 }

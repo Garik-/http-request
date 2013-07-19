@@ -1,4 +1,9 @@
 <?php
+/**
+ * @author Gar|k <garik.djan@gmail.com>
+ * @copyright (c) 2013, http://c0dedgarik.blogspot.ru/
+ * @version 0.1
+ */
 
 class SocketInterface implements HttpURLConnection
 {
