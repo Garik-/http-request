@@ -1,10 +1,16 @@
 <?php
 
-require 'HttpRequest.php';
-
 class HttpRequestTest extends PHPUnit_Framework_TestCase
 {
     const URL="http://localhost/http/test/test.php";
+    private $basepath;
+
+    public function __construct()
+    {
+	parent::__construct();
+	$this->basepath=dirname(__FILE__).DIRECTORY_SEPARATOR;
+	require_once $this->basepath.'..'.DIRECTORY_SEPARATOR.'HttpRequest.php';
+    }
 
     public function testGet()
     {
@@ -38,8 +44,6 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
     {
 	$http = HttpRequest::get(self::URL."?oleg=2", array("get_var"	 => "23", "pole"		 => "lol"));
 	$url = $http->url();
-	$this->assertEquals('localhost', $url['host']);
-	$this->assertEquals('/http/test.php', $url['path']);
 	$this->assertEquals('oleg=2&get_var=23&pole=lol', $url['query']);
     }
 
@@ -61,14 +65,15 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
     public function testPost()
     {
 	$image = sys_get_temp_dir().DIRECTORY_SEPARATOR.'test_img.jpg';
+	$image_upload=$this->basepath."img.jpg";
 
 	// передача multipart/form-data
-	$http = HttpRequest::post(self::URL, array("post" => 1))->form(array("param1" => "value", "param2" => "@/var/www/http/img.jpg"));
+	$http = HttpRequest::post(self::URL, array("post" => 1))->form(array("param1" => "value", "param2" => "@".$image_upload));
 	$this->assertInstanceOf('HttpRequest', $http);
 	$this->assertEquals('POST', $http->method());
 	$this->assertEquals('param1=value', $http->body());
 	$this->assertFileExists($image);
-	$this->assertFileEquals('/var/www/http/img.jpg', $image);
+	$this->assertFileEquals($image_upload, $image);
 
 	unset($http);
 
@@ -91,9 +96,10 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
 
     public function testUpload()
     {
-	$http = HttpRequest::put(self::URL."?put=1")->upload('/var/www/http/img.jpg');
+	$image_upload=$this->basepath."img.jpg";
+	$http = HttpRequest::put(self::URL."?put=1")->upload($image_upload);
 	$this->assertTrue($http->ok());
-	$this->assertFileEquals('/var/www/http/img.jpg', $http->body()); // в результате вернется путь до файла куда записалось все.
+	$this->assertFileEquals($image_upload, $http->body()); // в результате вернется путь до файла куда записалось все.
     }
 
     public function testfollowRedirects()
