@@ -197,6 +197,8 @@ class HttpRequest
 
     /**
      * Specify the {@link ConnectionFactory} used to create new requests.
+     *
+     * @return \HttpRequest
      */
     public function setConnectionFactory(HttpConnectionFactory $connectionFactory = null)
     {
