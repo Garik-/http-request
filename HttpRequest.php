@@ -279,7 +279,7 @@ class HttpRequest
     }
 
     /**
-     * Принять данные в файл
+     * Receive data in a file
      *
      * @param stream|file $file
      * @return \HttpRequest
@@ -293,7 +293,7 @@ class HttpRequest
     }
 
     /**
-     * Загрузка файла на сервер методом PUT
+     * Upload a file to the server using PUT
      *
      * @param string $fileName
      * @return \HttpRequest
@@ -319,7 +319,7 @@ class HttpRequest
     }
 
     /**
-     * Добавляет параметры из объекта/массива $params к основному URL
+     * Appends the parameters of the object/array $params to the main URL
      *
      * @param string $url
      * @param array|object $params
@@ -425,7 +425,8 @@ class HttpRequest
     }
 
     /**
-     * Eсли нужно передать файл, достаточно указать file_field => @/path/to/file/img.png
+     * If you want to transfer a file,
+     * you need to specify the "file_field" => "@/path/to/file/img.png"
      *
      * @param Array|String $fields
      * @return \HttpRequest
@@ -789,7 +790,8 @@ interface HttpURLConnection
     public function getResponseMessage();
 
     /**
-     * Все данные, передаваемые в HTTP POST-запросе. Для передачи файла, укажите перед именем файла @, а также используйте полный путь к файлу.
+     * Все данные, передаваемые в HTTP POST-запросе.
+     * Для передачи файла, укажите перед именем файла @, а также используйте полный путь к файлу.
      * При передаче файлов с префиксом @, $data должен быть массивом
      * Если $data является массивом, заголовок Content-Type будет установлен в значение multipart/form-data
      * @param Array|String $data
