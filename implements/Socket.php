@@ -256,10 +256,15 @@ class SocketInterface implements HttpURLConnection
 
     private function getContentType($filepath)
     {
-	if (!function_exists('finfo_open') || ($info = finfo_open(FILEINFO_MIME)) === false)
-	    return "application/octet-stream";
+    	$type=false;
 
-	return finfo_file($info, $filepath);
+    	if(function_exists('finfo_open') && ($info = finfo_open(FILEINFO_MIME)) !== false) 
+    	{
+    		$type = finfo_file($info, $filepath);
+    		finfo_close($info);
+    	}
+
+    	return $type === false ? "application/octet-stream" : $type;
     }
 
     private function partHeader($name, $filename = null, $contentType = null)
