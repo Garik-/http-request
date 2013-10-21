@@ -140,12 +140,12 @@ class SocketInterface implements HttpURLConnection
 
 	if (is_resource($this->receive_file))
 	{
-	    $this->fwrite_string($this->receive_file, implode('', array_slice($headers, $offset)));
+	    $this->fwrite_string($this->receive_file, implode(self::CRLF, array_slice($headers, $offset)));
 	    $this->fwrite_stream($this->receive_file, $this->socket);
 	}
 	else
 	{
-	    $this->response = implode('', array_slice($headers, $offset));
+	    $this->response = implode(self::CRLF, array_slice($headers, $offset));
 	    $this->response.= stream_get_contents($this->socket);
 	}
     }
