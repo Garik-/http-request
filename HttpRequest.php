@@ -707,7 +707,7 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
     {
 	$basepath = dirname(__FILE__).DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR;
 
-	// предпочтение отдается библиотеке CURL
+	// предпочтение отдается библиотеке cURL
 	if (extension_loaded('curl') && file_exists($basepath.'CURL.php'))
 	{
 	    require_once $basepath.'CURL.php';
@@ -719,6 +719,8 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 	    require_once $basepath.'Socket.php';
 	    return new SocketInterface($url);
 	}
+	
+	throw new HttpRequestException('Подключите PHP-библиотеку cURL или sockets.');
     }
 
 }
