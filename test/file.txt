@@ -1,0 +1,838 @@
+<?php
+/**
+ * Редактирование заказов
+ * 
+ * @package    Diafan.CMS
+ * @author     diafan.ru
+ * @version    5.3
+ * @license    http://cms.diafan.ru/license.html
+ * @copyright  Copyright (c) 2003-2013 OOO «Диафан» (http://diafan.ru)
+ */
+
+if (! defined('DIAFAN'))
+{
+	include dirname(dirname(dirname(__FILE__))).'/includes/404.php';
+}
+
+/**
+ * Shop_admin_order
+ */
+class Shop_admin_order extends Frame_admin
+{
+	/**
+	 * @var string таблица в базе данных
+	 */
+	public $table = 'shop_order';
+
+	/**
+	 * @var array поля в базе данных для редактирования
+	 */
+	public $variables = array (
+		'main' => array (
+			'number' => array(
+				'type' => 'function',
+				'name' => 'Заказ №',
+				'help' => 'Номер заказа.',
+			),
+			'created' => array(
+				'type' => 'datetime',
+				'name' => 'Дата',
+				'help' => 'Дата создания заказа. Вводится в формате дд.мм.гггг чч:мм.',
+			),
+			'lang_id' => array(
+				'type' => 'select',
+				'name' => 'Язык интерфейса',
+				'help' => 'Фиксируется язык интерфейса, который был при оформлении заказа.',
+			),
+			'hr1' => 'hr',
+			'memo' => array(
+				'type' => 'function',
+				'name' => 'Накладная',
+				'help' => 'Ссылка на товарную накладную. Шаблон редактируется в файле modules/cart/payment/non_cash/cart.payment.non_cash.memo_tpl.php.',
+			),
+			'goods' => array(
+				'type' => 'function',
+				'name' => 'Товары',
+				'help' => 'Таблица заказанных товаров, сопутствующих услуг. Доступна для редактирования.',
+			),
+			'payment_id' => array(
+				'type' => 'select',
+				'name' => 'Способ оплаты',
+				'help' => 'Список подключенных методов оплаты.',
+			),
+			'discount_summ' => array(
+				'type' => 'function',
+				'name' => 'Общая скидка',
+			),
+			'delivery_id' => array(
+				'type' => 'select',
+				'name' => 'Способ доставки',
+				'help' => 'Список подключенных способов доставки.',
+			),
+			'hr2' => 'hr',
+			'user_id' => array(
+				'type' => 'function',
+				'name' => 'Пользователь',
+				'help' => 'Если заказал зарегистрированный пользователь.',
+			),
+			'param' => array(
+				'type' => 'function',
+				'name' => 'Дополнительные поля',
+				'help' => 'Группа полей, определенных в части «Форма оформления заказа».',
+			),
+			'hr3' => 'hr',
+			'status_id' => array(
+				'type' => 'function',
+				'name' => 'Статус',
+				'help' => 'список подключенных статусов. При смене статуса, у которого действие определено как «оплата, уменьшение количества на складе», делается запись в историю платежей и количество товара уменьшается.',
+			),
+		),
+	);
+
+	/**
+	 * @var array настройки модуля
+	 */
+	public $config = array (
+		'del', // удалить
+		'datetime', // показывать дату в списке, сортировать по дате
+		'trash', // использовать корзину
+	);
+
+	/**
+	 * @var array списки из таблицы
+	 */
+	public $select = array(
+		'payment_id' => array(
+			"shop_payment",
+			"id",
+			"nameLANG",
+			"",
+			"-",
+			"trash='0'",
+		),
+		'delivery_id' => array(
+			"shop_delivery",
+			"id",
+			"nameLANG",
+			"",
+			"-",
+			"trash='0'",
+		),
+	);
+
+	/**
+	 * @var array значения списков
+	 */
+	public $select_arr = array(
+		'color' => array(
+			0 => 'red',
+			1 => 'blue',
+			2 => 'gray',
+			3 => 'darkgreen',
+			4 => 'black',
+		),
+	);
+
+	/**
+	 * @var array выводить в списке содержание полей:
+	 */
+	public $config_other_row = array (
+		'status_id' => 'function', 
+		'summ' => 'function',
+		'user_id' => 'function',
+	);
+
+	/**
+	 * @var array текст для ссылки на редактирование в списке
+	 */
+	public $text_for_base_link = array(
+		'variable' => 'id',
+		'text' => 'Заказ № %d'
+	);
+
+	/**
+	 * Подготавливает конфигурацию модуля
+	 * @return void
+	 */
+	public function prepare_config()
+	{
+		if(count($this->diafan->languages) > 2)
+		{
+			foreach ($this->diafan->languages as $language)
+			{
+				$this->diafan->select_arr("lang_id", $language["id"], $language["name"]);
+			}
+		}
+		else
+		{
+			$this->diafan->variable_unset("lang_id");
+		}
+		$result = DB::query("SELECT id, [name], status FROM {shop_order_status} WHERE trash='0' ORDER BY sort DESC");
+		while($row = DB::fetch_array($result))
+		{
+			$GLOBALS["status"][$row["id"]] = $row["status"];
+			$this->diafan->select_arr("status_id", $row["id"], $row["name"]);
+		}
+		DB::free_result($result);
+		if($this->diafan->addnew)
+		{
+			$this->diafan->variable_unset("number");
+		}
+	}
+
+	/**
+	 * Выводит ссылку на добавление
+	 * @return void
+	 */
+	public function show_add()
+	{
+		$this->diafan->addnew_init('Добавить заказ');
+	}
+
+	/**
+	 * Выводит список заказов
+	 * @return void
+	 */
+	public function show()
+	{	
+		echo '<script type="text/javascript" src="'.BASE_PATH.'modules/shop/admin/shop.admin.order.js"></script>';
+		echo '<script type="text/javascript">
+			last_order_id = '.DB::query_result("SELECT MAX(id) FROM {shop_order} WHERE trash='0'").';
+			title = \''.$this->diafan->_('Новый заказ').'\';
+			timeout = 120000;
+			setTimeout("check_new_order()", timeout);
+		</script>';
+		foreach ($this->diafan->select_arr("status_id") as $id => $value)
+		{
+			$first_status = $id;
+			break;
+		}
+
+		echo '<div style="position:absolute;top:96px;left:300px;"><a href="'.BASE_PATH_HREF.'shop/order/?search_status_id='.$first_status.'" class="new_order">'.$this->diafan->_('Проверить новые заказы').'</a></div>';
+
+		$this->diafan->list_row();
+		
+		if (! $this->diafan->count)
+		{
+			if(empty($this->diafan->get_nav_params))
+			{
+				echo '<center><b>'.$this->diafan->_('Заказов нет').'</b><br>('
+				.$this->diafan->_('заказы создаются посетителями из пользовательской части сайта')
+				.')</center>';
+			}
+			else
+			{
+				echo '<p><center><b>'.$this->diafan->_('Заказов не найдено').'</b></p>';
+			}
+		}
+		else
+		{
+			$stat = DB::query_fetch_array("SELECT SUM(summ) AS summ, COUNT(*) AS count FROM {shop_order} WHERE trash='0'".$this->diafan->where);
+			echo '<p>'.$this->diafan->_('Итог').': '.$this->diafan->_shop->price_format($stat["summ"]).' '.$this->diafan->configmodules("currency", "shop").'</p>';
+			echo '<p>'.$this->diafan->_('Средний чек').': '.$this->diafan->_shop->price_format($stat["summ"] / $stat["count"]).' '.$this->diafan->configmodules("currency", "shop").'</p>';
+		}
+	}
+
+	/**
+	 * Определяет строку с GET переменными
+	 *
+	 * @return void
+	 */
+	public function set_get_nav()
+	{
+		$get_nav_params = $this->diafan->get_nav_params;
+		$get_nav_params["search_id"] = '';
+		if (! empty($_GET["search_id"]))
+		{
+			$get_nav_params["search_id"] = $this->diafan->get_param($_GET, "search_id", 0, 2);
+			$this->diafan->get_nav .= ($this->diafan->get_nav ? '&amp;' : '?').'search_id='.$get_nav_params["search_id"];
+			$this->diafan->where .= " AND id=".$get_nav_params["search_id"];
+		}
+		$get_nav_params["search_created_start"] = '';
+		if (!empty( $_GET["search_created_start"] ))
+		{
+			$get_nav_params["search_created_start"] = $this->diafan->unixdate($_GET["search_created_start"].'.'.date("Y"));
+			$this->diafan->where .= " AND created>=".$get_nav_params["search_created_start"];
+			$get_nav_params["search_created_start"] = date("d.m", $get_nav_params["search_created_start"]);
+			$this->diafan->get_nav .= ( $this->diafan->get_nav ? '&amp;' : '?' ) . 'search_created_start='.$get_nav_params["search_created_start"];
+		}
+		$get_nav_params["search_created_finish"] = '';
+		if (!empty( $_GET["search_created_finish"] ))
+		{
+			$get_nav_params["search_created_finish"] = $this->diafan->unixdate($_GET["search_created_finish"].'.'.date("Y").' 23:59');
+			$this->diafan->where .= " AND created<=".$get_nav_params["search_created_finish"];
+			$get_nav_params["search_created_finish"] = date("d.m", $get_nav_params["search_created_finish"]);
+			$this->diafan->get_nav .= ( $this->diafan->get_nav ? '&amp;' : '?' ) . 'search_created_finish='.$get_nav_params["search_created_finish"];
+		}
+		$get_nav_params["search_summ_start"] = '';
+		if (!empty( $_GET["search_summ_start"] ))
+		{
+			$get_nav_params["search_summ_start"] = $this->diafan->get_param($_GET, "search_summ_start", 0, 2);
+			$this->diafan->where .= " AND summ>=".$get_nav_params["search_summ_start"];
+			$this->diafan->get_nav .= ( $this->diafan->get_nav ? '&amp;' : '?' ) . 'search_summ_start='.$get_nav_params["search_summ_start"];
+		}
+		$get_nav_params["search_summ_finish"] = '';
+		if (!empty( $_GET["search_summ_finish"] ))
+		{
+			$get_nav_params["search_summ_finish"] = $this->diafan->get_param($_GET, "search_summ_finish", 0, 2);
+			$this->diafan->where .= " AND summ<=".$get_nav_params["search_summ_finish"];
+			$this->diafan->get_nav .= ( $this->diafan->get_nav ? '&amp;' : '?' ) . 'search_summ_finish='.$get_nav_params["search_summ_finish"];
+		}
+		$get_nav_params["search_status_id"] = '';
+		if (isset( $_GET["search_status_id"] ) && $_GET["search_status_id"] != 'all')
+		{
+			$get_nav_params["search_status_id"] = $this->diafan->get_param($_GET, "search_status_id", 0, 2);
+			$this->diafan->where .= " AND status_id=".$get_nav_params["search_status_id"];
+			$this->diafan->get_nav .= ( $this->diafan->get_nav ? '&amp;' : '?' ) . 'search_status_id='.$get_nav_params["search_status_id"];
+		}
+		$get_nav_params["search_text"] = '';
+		if (!empty( $_GET["search_text"] ))
+		{
+			$this->diafan->join .= " INNER JOIN {shop_order_param_element} AS p ON p.element_id=e.id";
+			$this->diafan->where .= " AND p.value LIKE '%%".addslashes(str_replace("%", "%%", $_GET["search_text"]))."%%'";
+			$this->diafan->get_nav .= ($this->diafan->get_nav ? '&amp;' : '?') . 'search_text='.urlencode($_GET["search_text"]);
+			$get_nav_params["search_text"] = htmlspecialchars($_GET["search_text"]);
+		}
+		$this->diafan->get_nav_params = $get_nav_params;
+	}
+
+	/**
+	 * Поиск
+	 *
+	 * @return boolean
+	 */
+	public function show_search()
+	{
+		$html = '<td class="date">
+		<nobr><input type="text" name="search_created_start" value="'.(! empty($this->diafan->get_nav_params["search_created_start"]) ?$this->diafan->get_nav_params["search_created_start"] : '' ).'" size="7" class="timecalendar" showTime="false" hideYear="true"><input type="text" name="search_created_finish" value="'.(! empty($this->diafan->get_nav_params["search_created_finish"]) ?$this->diafan->get_nav_params["search_created_finish"] : '' ).'" size="7" class="timecalendar" showTime="false" hideYear="true"></nobr></td>
+
+		<td class="name"><input type="text" class="search_title" value="'.$this->diafan->_('Искать по номеру').'" size="15"><input type="text" name="search_id" value="'.(! empty($this->diafan->get_nav_params["search_id"]) ? $this->diafan->get_nav_params["search_id"] : '' ).'" size="15" class="search">
+		</td>
+
+		<td class="status"><select name="search_status_id">
+		<option value="all">'.$this->diafan->_('Все').'</option>';
+		foreach ($this->diafan->select_arr("status_id") as $id => $value)
+		{
+			$html .= '<option value="'.$id.'"'.(! empty($this->diafan->get_nav_params["search_status_id"]) && $this->diafan->get_nav_params["search_status_id"] == $id ? ' selected' : '').'>'.$value.'</option>';
+		}
+		$html .= '</select></td>
+		<td class="summ">
+		<input type="text" class="search_title" value="'.$this->diafan->_('от').'" size="3">
+		<input type="text" size="3" name="search_summ_start" value="'.(! empty($this->diafan->get_nav_params["search_summ_start"]) ?$this->diafan->get_nav_params["search_summ_start"] : '' ).'" class="search">
+		<input type="text" class="search_title" value="'.$this->diafan->_('до').'" size="3">
+		<input type="text" size="3" name="search_summ_finish" value="'.(! empty($this->diafan->get_nav_params["search_summ_finish"]) ?$this->diafan->get_nav_params["search_summ_finish"] : '' ).'" class="search">
+		'.$this->diafan->configmodules("currency", "shop").'
+		</td>
+		<td class="comment"><input type="text" class="search_title" value="'.$this->diafan->_('Искать по покупателю').'"><input type="text" name="search_text" value="'.(! empty($this->diafan->get_nav_params["search_text"]) ? $this->diafan->get_nav_params["search_text"] : '' ).'" size="20" class="search">
+		<input type="submit" class="button" value="'.$this->diafan->_('Найти').'">
+		</td>';
+
+		return $html;
+	}
+
+	/**
+	 * Выводит имя заказчика в списке заказов
+	 * @return string
+	 */
+	public function other_row_user_id($row)
+	{
+		if($row["user_id"])
+		{
+			$text = '<td class="comment"><a href="'.BASE_PATH_HREF.'users/edit'.$row["user_id"].'/">'.DB::title("users", $row["user_id"], "fio").'</a></td>';
+		}
+		else
+		{
+			$text = '<td class="comment">
+				<div>
+					<span></span>
+					<table><tbody><tr><td>';
+			$values = '';
+	
+			$result = DB::query("SELECT e.value, e.param_id, p.type, p.[name] FROM {shop_order_param_element} AS e"
+								." INNER JOIN {shop_order_param} AS p ON e.param_id=p.id"
+								. " WHERE e.trash='0' AND e.element_id=%d", $row["id"]);
+			while ($row = DB::fetch_array($result))
+			{
+				if ($row["value"])
+				{
+					switch ($row["type"])
+					{
+						case 'select':
+						case 'multiple':
+							$row["value"] = DB::query_result("SELECT [name] FROM {shop_order_param_select} WHERE id=%d LIMIT 1", $row["value"]);
+							break;
+	
+						case 'checkbox':
+							$v = DB::query_result("SELECT [name] FROM {shop_order_param_select} WHERE param_id=%d AND value=1 LIMIT 1", $row["param_id"]);
+							if ($v)
+							{
+								$row["value"] = $row["name"] . ': ' . $v;
+							}
+							else
+							{
+								$row["value"] = $row["name"];
+							}
+							break;
+					}
+					$values .= ( $values ? ', ' : '' ) . $row["value"];
+				}
+			}
+			DB::free_result($result);
+			$text .= $values . '</td></tr></tbody></table>
+			</div></td>';
+		}
+		return $text;
+	}
+
+	/**
+	 * Выводит сумму заказа в списке заказов
+	 * @return string
+	 */
+	public function other_row_summ($row)
+	{
+		return '<td class="summ">'
+		.($row["summ"]
+		 ? $this->diafan->_shop->price_format($row["summ"]).' '.$this->diafan->configmodules("currency", "shop")
+		 : '').'</td>';
+	}
+
+	/**
+	 * Выводит статус заказа в списке заказов
+	 * @return string
+	 */
+	public function other_row_status_id($row)
+	{
+		if(! isset($GLOBALS["status"][$row["status_id"]]))
+		{
+			$GLOBALS["status"][$row["status_id"]] = '';
+		}
+		return '<td class="status">'
+		.'<span style="color:'.$this->diafan->select_arr("color", $GLOBALS["status"][$row["status_id"]]).';font-weight: bold;">'
+		.$this->diafan->select_arr("status_id", $row["status_id"]).'</span></td>';
+	}
+
+	/**
+	 * Редактирование поля "Номер"
+	 * @return void
+	 */
+	public function edit_variable_number()
+	{
+		echo '<tr>
+			<td align="right">
+				'.$this->diafan->variable_name().'
+			</td>
+			<td style="color:#999999;font-weight:bold">
+				'.$this->diafan->edit.' '.$this->diafan->help().'
+			</td>
+		</tr>';
+	}
+
+	/**
+	 * Редактирование поля "Статус"
+	 * @return void
+	 */
+	public function edit_variable_status_id()
+	{
+		echo '
+		<tr>
+			<td align="right">
+				'.$this->diafan->variable_name().'
+			</td>
+			<td>';
+		echo '<select name="status_id" id="order_select_status">';
+		foreach ($this->diafan->select_arr("status_id") as $key => $value)
+		{
+			echo '<option value="'.$key.'"'.($key == $this->diafan->value ? ' selected' : '').'>'.$value.'</option>';
+		}
+		echo '</select>'.$this->diafan->help();
+		echo '</td>
+		</tr>';
+	}
+
+	/**
+	 * Редактирование поля "Накладная"
+	 * @return void
+	 */
+	public function edit_variable_memo()
+	{
+		if($this->diafan->addnew)
+			return;
+
+		echo '
+		<tr valign="top">
+			<td align="right"></td>
+			<td><a href="'.BASE_PATH.'cart/payment/non_cash/memo/'.$this->diafan->edit.'/'.$this->diafan->values["code"].'/" target="_blank">'.$this->diafan->_('Сформировать товарную накладную для печати').'</a></td>
+		</tr>';
+	}
+
+	/**
+	 * Редактирование поля "Накладная"
+	 * @return void
+	 */
+	public function edit_variable_param()
+	{
+		parent::__call('edit_variable_param', array());
+
+		if($this->diafan->addnew)
+			return;
+
+		$info = array('city' => '', 'street' => '', 'building' => '', 'suite' => '');
+		$result = DB::query("SELECT e.value, p.info FROM {shop_order_param_element} AS e INNER JOIN {shop_order_param} AS p ON p.id=e.param_id WHERE e.element_id=%d AND p.info IN ('city', 'street', 'building', 'suite')", $this->diafan->edit);
+		while($row = DB::fetch_array($result))
+		{
+			$info[$row["info"]] = $row["value"];
+		}
+		DB::free_result($result);
+
+		echo '
+		<tr valign="top">
+			<td align="right"></td>
+			<td><a href="http://maps.yandex.ru/?text='.$info["city"].' '.$info["street"].' '.$info["building"].' '.$info["suite"].'" target="_blank">'.$this->diafan->_('Показать адрес на карте').'</a></td>
+		</tr>';
+	}
+
+	/**
+	 * Редактирование поля "Товары"
+	 * @return void
+	 */
+	public function edit_variable_goods()
+	{
+		$summ = 0;
+		$count = 0;
+		$cat = 0;
+		echo '
+		<tr valign="top">
+		<td colspan="2">
+                <script type="text/javascript" src="'.BASE_PATH.'modules/shop/admin/shop.admin.order.js"></script>
+				<table class="border" cellspacing="0">
+					<tr id="tr_first">
+						<td id="first"></td>
+						<td>'.$this->diafan->_('Наименование товара').'</td>
+						<td align="right">'.$this->diafan->_('Количество').'</td>
+						<td align="right">'.$this->diafan->_('Цена').'</td>
+						<td align="right">'.$this->diafan->_('Скидка').'</td>
+						<td align="right">'.$this->diafan->_('Итоговая цена').'</td>
+						<td align="right">'.$this->diafan->_('Сумма').'</td>
+						<td></td>
+					</tr>';
+
+		if(! $this->diafan->addnew)
+		{
+			$result = DB::query(
+				"SELECT g.*, s.name".$this->diafan->language_base_site." AS name_good, s.article, s.cat_id, c.name".$this->diafan->language_base_site." AS name_cat FROM {shop_order_goods} AS g"
+				." INNER JOIN {shop} AS s ON g.good_id=s.id"
+				." LEFT JOIN {shop_category} AS c ON s.cat_id=c.id"
+				." WHERE g.order_id=%d ORDER by c.sort ASC",
+				$this->diafan->values["id"]
+			); 
+			while ($row = DB::fetch_array($result))
+			{
+				$depend = '';
+				$params = array();
+				$result_p = DB::query("SELECT * FROM {shop_order_goods_param} WHERE order_good_id=%d", $row["id"]); 
+				while ($row_p = DB::fetch_array($result_p))
+				{
+					$params[$row_p["param_id"]] = $row_p["value"];
+					if(! $row_p["value"])
+						continue;
+					$param_name  = DB::query_result("SELECT [name] FROM {shop_param} WHERE id=%d LIMIT 1", $row_p["param_id"]);
+					$param_value = DB::query_result("SELECT [name] FROM {shop_param_select} WHERE id=%d AND param_id=%d LIMIT 1", $row_p["value"], $row_p["param_id"]);
+					$depend .= ($depend ? ', ' : '').$param_name.': '.$param_value;
+				}
+				DB::free_result($result_p);
+				if($cat != $row["cat_id"])
+				{
+					echo '<tr class="tr_cat"><td></td><td colspan="7"><b>'.$row["name_cat"].'</b></tr>';
+					$cat = $row["cat_id"];
+				}
+				$row_price = $this->diafan->_shop->price_get($row["good_id"], $params, false);
+				if(empty($row_price["price_id"]))
+				{
+					$row_price["price_id"] = 0;
+					$row_price["price"] = 0;
+				}
+				$row["discount"] = '';
+				if($row["discount_id"])
+				{
+					if(empty($discounts[$row["discount_id"]]))
+					{
+						$d = DB::query_fetch_array("SELECT discount, deduction FROM {shop_discount} WHERE id=%d LIMIT 1", $row["discount_id"]);
+						$discounts[$row["discount_id"]] = $d["discount"] ? $d["discount"].'%' : $d["deduction"].' '.$this->diafan->configmodules("currency", "shop");
+					}
+					$row["discount"] = $discounts[$row["discount_id"]];
+				}
+				elseif($row_price["old_price"] && $row_price["old_price"] != $row["price"])
+				{
+					$row["discount"] = ceil(100 - $row["price"]/$row_price["old_price"] * 100).' %';
+				}
+				$img = DB::query_fetch_array("SELECT i.name, i.folder_num FROM {images} AS i
+				LEFT JOIN {shop_price_image_rel} AS r ON r.image_id=i.id AND r.price_id=%d
+				WHERE i.element_id=%d AND i.module_name='shop' AND i.trash='0'
+				ORDER BY r.image_id DESC LIMIT 1",
+				$row_price["price_id"], $row["good_id"]);
+
+				$price = $row_price["old_price"] ? $row_price["old_price"] : $row_price["price"];
+				if(($price*10)%10)
+				{
+					$num_decimal_places = 2;
+				}
+				else
+				{
+					$num_decimal_places = 0;
+				}
+				echo '
+				<tr class="tr_good">
+					<td id="first">'.($img ? '<img src="'.BASE_PATH.USERFILES.'/small/'.($img["folder_num"] ? $img["folder_num"].'/' : '').$img["name"].'">' : '').'</td>
+					<td><a href="'.BASE_PATH_HREF.'shop/edit'.$row["good_id"].'/">'.$row["name_good"].' '.$depend.' '.$row["article"].'</a></td>
+					<td align="right"><input type="text" name="count_goods'.$row["id"].'" value="'.$row["count_goods"].'" size="2"></td>
+					<td align="right">'.$this->diafan->_shop->price_format($price).'</td>
+					<td align="right">'.($row["discount_id"] ? '<a href="'.BASE_PATH_HREF.'shop/discount/edit'.$row["discount_id"].'/">'.$row["discount"].'</a>' : $row["discount"]).'</td>
+					<td align="right"><input type="text" name="price_goods'.$row["id"].'" value="'.number_format($row["price"], $num_decimal_places, ".", "").'" size="4"></td>
+					
+					<td align="right">'.$this->diafan->_shop->price_format($row["price"] * $row["count_goods"]).'</td>
+					<td><a href="javascript:void(0)" confirm="'.$this->diafan->_('Вы действительно хотите удалить запись?').'" class="delete_order_good" title="'.$this->diafan->_('Удалить').'">
+					<img src="'.BASE_PATH.'adm/img/delete.png" width="13" height="13" alt="'.$this->diafan->_('Удалить').'"></a></td>
+	</tr>';
+				$summ += $row["price"] * $row["count_goods"];
+				$count += $row["count_goods"];
+			}
+			DB::free_result($result);
+		}
+		echo '<tr class="tr_good">
+				<td id="first">&nbsp;</td>
+				<td colspan="7">
+				<a href="javascript:void(0)" class="order_good_plus" title="' . $this->diafan->_('Добавить') . '"><img src="' . BASE_PATH . 'adm/img/add_new.png" width="14" height="14" alt="' . $this->diafan->_('Добавить') . '"></a> - ' . $this->diafan->_('Добавить товар к заказу') . '
+				<div class="hide" id="order_goods_container"></div></td>
+		</tr>';
+		if(! $this->diafan->addnew)
+		{
+			$result = DB::query("SELECT a.id, a.[name], a.price, a.amount, s.id AS sid, s.summ FROM {shop_additional_cost} AS a LEFT JOIN {shop_order_additional_cost} AS s ON s.additional_cost_id=a.id AND s.order_id=%d WHERE a.trash='0'", $this->diafan->values["id"]); 
+			while ($row = DB::fetch_array($result))
+			{
+				if($row["sid"])
+				{
+					$row['price'] = $row['summ'];
+				}
+				else
+				{
+					if (! empty($row['amount']))
+					{
+						if ($row['amount'] < $summ)
+						{
+							$row['price'] = 0;
+						}
+					}
+				}
+				echo '<tr class="tr_cat"><td></td><td colspan="7"><b>' . $this->diafan->_('Сопутствующие услуги') . '</b></tr>';
+			    echo '<tr class="tr_good">
+					<td id="first">&nbsp;</td>
+					<td colspan="3">'.$row["name"].'</td>
+					<td></td>
+					<td align="right" class="order_good_price"><input name="additional_cost_id'.$row["id"].'" value="1" type="checkbox" '.($row["sid"] ? ' checked' : '').' title="' . $this->diafan->_('Добавлено к заказу') . '"> <input type="text" name="summ_additional_cost'.$row["id"].'" value="'.$row["price"].'" size="4"></td>
+					<td align="right">'.($row["sid"] ? $row["price"] : '0').'</td>
+					<td></td>
+				</tr>';
+			}
+			DB::free_result($result);
+		}
+		if (! empty($this->diafan->values["delivery_id"]))
+		{
+			echo '<tr class="tr_cat"><td></td><td colspan="7"><b>' . $this->diafan->_('Стоимость доставки') . '</b></tr>';
+			$delivery_name = DB::query_result("SELECT [name] FROM {shop_delivery} WHERE id=%d LIMIT 1", $this->diafan->values["delivery_id"]);
+		    echo '<tr class="tr_good">
+				<td id="first">&nbsp;</td>
+				<td colspan="2">'.$delivery_name.'</td>
+				<td align="right" class="order_good_price">'.$this->diafan->_shop->price_format($this->diafan->values["delivery_summ"]).'</td>
+				<td></td>
+				<td></td>
+				<td align="right" class="order_good_price">'.$this->diafan->_shop->price_format($this->diafan->values["delivery_summ"]).'</td>
+				<td></td>
+			</tr>';
+		}
+		if(! empty($this->diafan->values["discount_summ"]) && ($this->diafan->values["discount_summ"]*10)%10)
+		{
+			$num_decimal_places = 2;
+		}
+		else
+		{
+			$num_decimal_places = 0;
+		}
+		echo '<tr>
+			<td id="first">&nbsp;</td>
+			<td colspan="3" align="right"><b>'
+			.(! empty($this->diafan->values["discount_id"]) ? '<a href="'.BASE_PATH_HREF.'shop/discount/edit'.$this->diafan->values["discount_id"].'/">' : '')
+			.$this->diafan->variable_name('discount_summ')
+			.(! empty($this->diafan->values["discount_id"]) ? '</a>' : '')
+			.'</b></td>
+			<td align="right" class="order_good_price"><input name="discount_summ" value="'
+			.(! empty($this->diafan->values["discount_summ"]) ? number_format($this->diafan->values["discount_summ"], $num_decimal_places, ".", "") : '')
+			.'" size="4" type="text"></td>
+			<td colspan="2" align="right">'.(! empty($this->diafan->values["discount_summ"]) ? '-'.$this->diafan->_shop->price_format($this->diafan->values["discount_summ"]) : '').'</td>
+			<td></td>
+		</tr>';
+		echo '
+			<tr class="tr_good">
+				<td id="first">&nbsp;</td>
+				<td align="right"><b>'.$this->diafan->_('ИТОГО').'</b></td>
+				<td align="right" class="order_good_count"><b>'.$count.'</b></td>
+				<td>'.$this->diafan->_('товаров').'</td>
+				<td align="right" colspan="2">'.$this->diafan->_('на сумму').'</td>
+				<td align="right" class="order_good_price"><b>'.(!$this->diafan->addnew ? $this->diafan->_shop->price_format($this->diafan->values["summ"]) : '').'</b></td><td></td>
+			</tr>
+		</table>
+		'.$this->diafan->help().'
+			</td>
+		</tr>
+		<tr id="hr_order">
+			<td colspan="2">
+				<hr>
+			</td>
+		</tr>
+		';
+	}
+
+	/**
+	 * Сохранение поля "Товары"
+	 * @return void
+	 */
+	public function save_variable_goods()
+	{
+		$summ = 0;
+		$result = DB::query("SELECT * FROM {shop_order_goods} WHERE order_id=%d", $this->diafan->save); 
+		while ($row = DB::fetch_array($result))
+		{
+			if(empty($_POST["count_goods".$row["id"]]))
+			{
+				DB::query("DELETE FROM {shop_order_goods} WHERE id=%d", $row["id"]);
+				DB::query("DELETE FROM {shop_order_goods_param} WHERE order_good_id=%d", $row["id"]);
+			}
+			else
+			{
+				if ($_POST["count_goods".$row["id"]] != $row["count_goods"])
+				{
+					DB::query("UPDATE {shop_order_goods} SET count_goods=%d WHERE id=%d", $_POST["count_goods".$row["id"]], $row["id"]);
+				}
+				if ($_POST["price_goods".$row["id"]] != $row["price"])
+				{
+					DB::query("UPDATE {shop_order_goods} SET price=%f, discount_id=0 WHERE id=%d", $_POST["price_goods".$row["id"]], $row["id"]);
+				}
+
+				$summ += $_POST["price_goods".$row["id"]] * $_POST["count_goods".$row["id"]];
+			}
+		}
+		DB::free_result($result);
+		$result = DB::query("SELECT a.id, s.id AS sid, s.summ FROM {shop_additional_cost} AS a LEFT JOIN {shop_order_additional_cost} AS s ON s.additional_cost_id=a.id AND s.order_id=%d WHERE a.trash='0'", $this->diafan->save); 
+		while ($row = DB::fetch_array($result))
+		{
+			if($row["sid"])
+			{
+				if(empty($_POST['additional_cost_id'.$row["id"]]))
+				{
+					DB::query("DELETE FROM {shop_order_additional_cost} WHERE id=%d", $row["sid"]);
+				}
+				elseif($row['summ'] != $_POST['summ_additional_cost'.$row["id"]])
+				{
+					DB::query("UPDATE {shop_order_additional_cost} SET summ=%f WHERE id=%d", $_POST['summ_additional_cost'.$row["id"]], $row["sid"]);
+				}
+			}
+			else
+			{
+				if(! empty($_POST['additional_cost_id'.$row["id"]]))
+				{
+					DB::query("INSERT INTO {shop_order_additional_cost} (additional_cost_id, summ, order_id) VALUES (%d, %f, %d)", $row["id"], $_POST['summ_additional_cost'.$row["id"]], $this->diafan->save);
+				}
+			}
+		}
+		DB::free_result($result);
+		
+		$result = DB::query("SELECT a.id, a.[name], s.summ, s.id AS a_id FROM {shop_additional_cost} AS a INNER JOIN {shop_order_additional_cost} AS s ON s.additional_cost_id=a.id WHERE s.order_id=%d", $this->diafan->save); 
+		while ($row = DB::fetch_array($result))
+		{
+			if(! isset($_POST['summ_additional_cost'.$row["id"]]))
+			{
+				DB::query("DELETE FROM {shop_order_additional_cost} WHERE id=%d", $row["a_id"]);
+			}
+			else
+			{
+				if($_POST['summ_additional_cost'.$row["id"]] != $row["summ"])
+				{
+					DB::query("UPDATE {shop_order_additional_cost} SET summ=%f WHERE id=%d", $_POST['summ_additional_cost'.$row["id"]], $row["a_id"]);
+				}
+				$summ += $_POST['summ_additional_cost'.$row["id"]];
+			}
+		}
+		DB::free_result($result);
+		$summ -= $_POST["discount_summ"];
+		DB::query("UPDATE {shop_order} SET summ=%f+delivery_summ WHERE id=%d", $summ, $this->diafan->save);
+	}
+
+	/**
+	 * Сохранение поля "Способ доставки"
+	 * @return void
+	 */
+	public function save_variable_delivery_id()
+	{
+		$summ = DB::query_result("SELECT summ-delivery_summ FROM {shop_order} WHERE id=%d LIMIT 1", $this->diafan->save);
+		$delivery_summ = 0;
+		$delivery_id = $_POST["delivery_id"];
+		if ($row = DB::query_fetch_array("SELECT price, delivery_id FROM {shop_delivery_thresholds}  WHERE delivery_id=%d AND amount<=%f ORDER BY amount DESC LIMIT 1", $_POST["delivery_id"], $summ))
+		{
+			$delivery_summ = $row["price"];
+			$delivery_id = $row["delivery_id"];
+		}
+		DB::query("UPDATE {shop_order} SET summ=summ-delivery_summ+%f, delivery_summ=%f, delivery_id=%d WHERE id=%d", $delivery_summ, $delivery_summ, $delivery_id, $this->diafan->save);
+	}
+
+	/**
+	 * Сохранение поля "Статус",
+	 * отправка ссылок на купленные файлы при необходимости
+	 * 
+	 * @return void
+	 */
+	public function save_variable_status_id()
+	{
+		if($this->diafan->oldrow["status_id"] == $_POST["status_id"])
+			return;
+
+		$status = DB::query_result("SELECT status FROM {shop_order_status} WHERE id=%d LIMIT 1", $_POST["status_id"]);
+		if($status == 1)
+		{
+			$this->diafan->_shop->order_pay($this->diafan->save);
+		}
+		else
+		{
+			$this->diafan->_shop->order_send_mail_change_status($this->diafan->save, $_POST["status_id"]);
+		}
+
+		$this->diafan->set_query("status_id=%d");
+		$this->diafan->set_value($_POST["status_id"]);
+
+		$this->diafan->set_query("status='%d'");
+		$this->diafan->set_value($status);
+	}
+
+	/**
+	 * Сохранение поля "Накладная"
+	 * @return void
+	 */
+	public function save_variable_memo()
+	{
+		if(empty($this->diafan->oldrow["code"]))
+		{
+			$this->diafan->set_query("code='%s'");
+			$this->diafan->set_value(md5(rand(0, 99999)));
+		}
+	}
+    
+    
+	/**
+	 * Сопутствующие действия при удалении элемента модуля
+	 * @return boolean true
+	 */
+	public function delete($del_id, $trash_id)
+	{
+		$this->diafan->del_or_trash_where("shop_order_goods", "order_id=".$del_id, $trash_id);
+		$this->diafan->del_or_trash_where("shop_order_goods_param", "order_good_id IN (SELECT id FROM {shop_order_goods} WHERE order_id=".$del_id.")", $trash_id);
+		$this->diafan->del_or_trash_where("shop_order_param_element", "element_id=".$del_id, $trash_id);
+	}
+}

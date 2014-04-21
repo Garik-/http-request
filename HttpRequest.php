@@ -170,6 +170,11 @@ class HttpRequest
      */
     const HTTP_MOVED_PERM = 301;
 
+    /**
+     * Numeric status code, 302 Moved Temporarily
+     */
+    const HTTP_MOVED_TEMP = 302;
+
     private $url;
     private $requestMethod;
 
@@ -719,7 +724,7 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 	    require_once $basepath.'Socket.php';
 	    return new SocketInterface($url);
 	}
-	
+
 	throw new HttpRequestException('Подключите PHP-библиотеку cURL или sockets.');
     }
 

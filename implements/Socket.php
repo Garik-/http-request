@@ -1,10 +1,10 @@
 <?php
+
 /**
  * @author Gar|k <garik.djan@gmail.com>
  * @copyright (c) 2013, http://c0dedgarik.blogspot.ru/
  * @version 0.1
  */
-
 class SocketInterface implements HttpURLConnection
 {
 
@@ -13,10 +13,9 @@ class SocketInterface implements HttpURLConnection
     const CONTENT_TYPE_MULTIPART = "multipart/form-data; boundary=00content0boundary00";
     const CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
     const CRLF = "\r\n";
-
-    const ERROR_FILE_READ="Невозможно прочитать файл %s";
-    const ERROR_FILE_EXIST="Файла %s не существует";
-    const ERROR_SEND="Невозможно передать данные";
+    const ERROR_FILE_READ = "Невозможно прочитать файл %s";
+    const ERROR_FILE_EXIST = "Файла %s не существует";
+    const ERROR_SEND = "Невозможно передать данные";
 
     private $response;
     private $response_code;
@@ -86,7 +85,7 @@ class SocketInterface implements HttpURLConnection
 	if ($this->response != null)
 	    return $this->response;
 
-	if(is_resource($this->socket)) // при повторном обращении если follow_redirects
+	if (is_resource($this->socket)) // при повторном обращении если follow_redirects
 	    fclose($this->socket);
 
 	$this->socket = fsockopen($this->url['host'], !empty($this->url['port']) ? $this->url['port'] : 80, $errno, $errstr, $this->connect_timeout);
@@ -110,6 +109,7 @@ class SocketInterface implements HttpURLConnection
     { //TODO: возможно стоит использовать fread + проверять на ошибку
 	$offset = 0;
 	$this->response_headers = array();
+	$this->response = null;
 
 	$headers = explode(self::CRLF, stream_get_contents($this->socket, self::MIN_RESPONSE_SIZE));
 	foreach ($headers as $header)
@@ -126,16 +126,15 @@ class SocketInterface implements HttpURLConnection
 		continue;
 	    }
 
-	    $pos = strpos($header, ':');
-	    if ($pos !== false)
-		$this->response_headers[substr($header, 0, $pos++)] = trim(substr($header, $pos));
+	    if (preg_match("/^(.*?):(.*?)$/", $header, $matches))
+		$this->response_headers[trim($matches[1])] = trim($matches[2]);
 	}
 
-	if($this->follow_redirects == true && array_key_exists(HttpRequest::HEADER_LOCATION, $this->response_headers))
+	if ($this->follow_redirects == true && array_key_exists(HttpRequest::HEADER_LOCATION, $this->response_headers))
 	{
-		$this->url=parse_url($this->response_headers[HttpRequest::HEADER_LOCATION]);
-		$this->response=$this->getResponse();
-		return; // остальная часть ответа сервера нам не нужна.
+	    $this->url = parse_url($this->response_headers[HttpRequest::HEADER_LOCATION]);
+	    $this->response = $this->getResponse();
+	    return; // остальная часть ответа сервера нам не нужна.
 	}
 
 	if (is_resource($this->receive_file))
@@ -204,7 +203,7 @@ class SocketInterface implements HttpURLConnection
 
     public function setFollowRedirects($followRedirects)
     {
-	$this->follow_redirects=$followRedirects;
+	$this->follow_redirects = $followRedirects;
     }
 
     public function setPostFields($data)
@@ -227,11 +226,11 @@ class SocketInterface implements HttpURLConnection
 		{
 		    $filepath = mb_substr($value, 1);
 		    if (!file_exists($filepath))
-			throw new HttpRequestException(sprintf(self::ERROR_FILE_EXIST,$filepath));
+			throw new HttpRequestException(sprintf(self::ERROR_FILE_EXIST, $filepath));
 
 		    $input = fopen($filepath, 'rb');
 		    if (!$input)
-			throw new HttpRequestException(sprintf(self::ERROR_FILE_READ,$filepath));
+			throw new HttpRequestException(sprintf(self::ERROR_FILE_READ, $filepath));
 
 		    $lenght+=$this->fwrite_string($this->post_fields, $this->partHeader($name, $filepath, $this->getContentType($filepath)));
 		    $lenght+=$this->fwrite_stream($this->post_fields, $input);
@@ -256,15 +255,15 @@ class SocketInterface implements HttpURLConnection
 
     private function getContentType($filepath)
     {
-    	$type=false;
+	$type = false;
 
-    	if(function_exists('finfo_open') && ($info = finfo_open(FILEINFO_MIME)) !== false) 
-    	{
-    		$type = finfo_file($info, $filepath);
-    		finfo_close($info);
-    	}
+	if (function_exists('finfo_open') && ($info = finfo_open(FILEINFO_MIME)) !== false)
+	{
+	    $type = finfo_file($info, $filepath);
+	    finfo_close($info);
+	}
 
-    	return $type === false ? "application/octet-stream" : $type;
+	return $type === false ? "application/octet-stream" : $type;
     }
 
     private function partHeader($name, $filename = null, $contentType = null)
@@ -308,7 +307,7 @@ class SocketInterface implements HttpURLConnection
 
 	$this->post_fields = fopen($fileName, 'r');
 	if (!$this->post_fields)
-	    throw new HttpRequestException(sprintf(self::ERROR_FILE_READ,$fileName));
+	    throw new HttpRequestException(sprintf(self::ERROR_FILE_READ, $fileName));
     }
 
     public function setReadTimeout($timeout)

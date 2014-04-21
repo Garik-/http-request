@@ -1,10 +1,10 @@
 <?php
+
 /**
  * @author Gar|k <garik.djan@gmail.com>
  * @copyright (c) 2013, http://c0dedgarik.blogspot.ru/
  * @version 0.1
  */
-
 // TODO: нужно проверять версию CURL не все поля поддерживаются.
 class CURLInterface implements HttpURLConnection
 {
@@ -16,6 +16,7 @@ class CURLInterface implements HttpURLConnection
     private $response;
     private $response_headers;
     private $response_message;
+    private $response_code;
 
     function __construct(Array $url)
     {
@@ -24,10 +25,12 @@ class CURLInterface implements HttpURLConnection
 	    $this->exeption();
 
 	$this->options = array(CURLOPT_RETURNTRANSFER	 => true,
-	    CURLOPT_HEADER		 => false,
-	    CURLOPT_HEADERFUNCTION	 => array($this, 'setHeaderFields'),
+	    CURLOPT_HEADER	=> true,
 	    CURLOPT_ENCODING	 => "",
-	    CURLOPT_NOPROGRESS	 => true);
+	    CURLOPT_NOPROGRESS	 => true,
+	    CURLOPT_VERBOSE		 => false);
+
+
 
 	if (array_key_exists('port', $url))
 	{
@@ -81,10 +84,11 @@ class CURLInterface implements HttpURLConnection
 
     public function getResponse()
     {
-	if ($this->response == null)
+	if ($this->response === null)
 	{
 	    $this->setOptions();
 	    $this->response = curl_exec($this->curl);
+	    $this->setHeaderFields();
 	}
 
 	if ($this->response === false)
@@ -105,10 +109,16 @@ class CURLInterface implements HttpURLConnection
 
     public function getResponseCode()
     {
-	if ($this->response == null)
-	    $this->getResponse();
+	if ($this->response_code)
+	    return $this->response_code;
 
-	return curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+	$this->getResponse();
+	$this->response_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+
+	if (false === $this->response_code)
+	    $this->exeption();
+
+	return $this->response_code;
     }
 
     public function setRequestProperty($name, $value)
@@ -134,9 +144,13 @@ class CURLInterface implements HttpURLConnection
     public function setReceiveFile($file)
     {
 	$this->options[CURLOPT_FILE] = $file;
-
-	if ($this->response == null) //TODO: сомневаюсь как то.
-	    $this->getResponse();
+	/**
+	 * Из-за проблем с CURLOPT_HEADERFUNCTION (долго обрабатывается запрос, не рабоатет в цикле)
+	 * заголовки пришлось обрабатывать вручную, а так как CURLOPT_FILE, перенаправляет
+	 * весь вывод в файл, пришлось отказаться от разбора заголовков.
+	 */
+	$this->options[CURLOPT_HEADER] = false;
+	$this->options[CURLOPT_BINARYTRANSFER] = true;
     }
 
     public function getHeaderField($name)
@@ -146,6 +160,7 @@ class CURLInterface implements HttpURLConnection
 
 	if (!array_key_exists($name, $this->response_headers))
 	    return null;
+
 	return $this->response_headers[$name];
     }
 
@@ -153,21 +168,34 @@ class CURLInterface implements HttpURLConnection
     {
 	if (empty($this->response_headers))
 	    $this->getResponse();
+
 	return $this->response_headers;
     }
 
-    public function setHeaderFields($curl, $header)
+    private function setHeaderFields()
     {
-	$pos = strpos($header, ':');
-	if ($pos !== false)
+	$header_size = curl_getinfo($this->curl, CURLINFO_HEADER_SIZE);
+	if (empty($header_size))
+	    return;
+
+	$header = substr($this->response, 0, $header_size);
+
+	if (preg_match_all("/(.*?):(.*?)\n/m", $header, $matches))
 	{
-	    $this->response_headers[substr($header, 0, $pos++)] = trim(substr($header, $pos));
+	    $count_matches = count($matches[0]);
+	    for ($i = 0; $i < $count_matches; $i++)
+	    {
+		$this->response_headers[trim($matches[1][$i])] = trim($matches[2][$i]);
+	    }
 	}
-	elseif (preg_match("/HTTP\/1\.\d\s\d+\s(.*)/", $header, $matches))
-	{
+
+	if (preg_match("/^HTTP\/1\.\d\s\d+\s(.*)\n/", $header, $matches))
 	    $this->response_message = trim($matches[1]);
-	}
-	return strlen($header);
+
+	$this->response = substr($this->response, $header_size);
+
+	if (false === $this->response)
+	    $this->response = null;
     }
 
     private function exeption()

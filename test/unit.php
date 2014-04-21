@@ -1,6 +1,7 @@
 <?php
 
 define('BASEPATH', dirname(__FILE__).DIRECTORY_SEPARATOR);
+define('PATH_TMP', sys_get_temp_dir().DIRECTORY_SEPARATOR);
 define('PATH_IMPL', BASEPATH.'..'.DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR);
 
 require_once BASEPATH.'..'.DIRECTORY_SEPARATOR.'HttpRequest.php';
@@ -121,7 +122,7 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
      */
     public function testPost()
     {
-	$image = sys_get_temp_dir().DIRECTORY_SEPARATOR.'test_img.jpg';
+	$image = PATH_TMP.'test_img.jpg';
 	$image_upload = BASEPATH."img.jpg";
 
 	// передача multipart/form-data
@@ -143,13 +144,39 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
 
     public function testReceive() // тестируем получение данных в файл
     {
-	$file = fopen(sys_get_temp_dir().DIRECTORY_SEPARATOR.'test_file.txt', 'wb');
+	$file = fopen(PATH_TMP.'test_file.txt', 'wb');
 	if ($file)
 	{
 	    $http = HttpRequest::get(self::URL)->receive($file)->setConnectionFactory(self::$factory[$this->index]);
 	    $this->assertTrue($http->ok());
 	    $this->assertEmpty($http->body()); // тело ответа должно быть пустым
 	    fclose($file);
+	}
+
+	$this->lastMethod=__METHOD__;
+    }
+
+    public function testReceive2()
+    {
+	static $j = 0;
+	$count = 20;
+
+	$file_original = BASEPATH."file.txt";
+	for($i=0;$i<$count;$i++)
+	{
+	    $file_downloaded = PATH_TMP.'test_file_'.$i.'.txt';
+	    $file = fopen($file_downloaded, 'wb');
+	    if($file)
+	    {
+		$http = HttpRequest::get("http://localhost/http/test/file.txt")->receive($file)->setConnectionFactory(self::$factory[$this->index]);
+		$this->assertTrue($http->ok());
+		$this->assertFileEquals($file_original, $file_downloaded);
+		fclose($file);
+		unlink($file_downloaded);
+		//usleep(1500);
+	    }
+	    echo $j++.PHP_EOL;
+
 	}
 
 	$this->lastMethod=__METHOD__;
@@ -168,10 +195,11 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase
     public function testfollowRedirects()
     {
 	$http = HttpRequest::get("http://google.com/?test=get")->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertEquals(HttpRequest::HTTP_MOVED_PERM, $http->code());
-
-	$http = HttpRequest::get("http://google.com/?test=get")->followRedirects(true)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertTrue($http->ok());
+	if(HttpRequest::HTTP_MOVED_PERM == $http->code() || HttpRequest::HTTP_MOVED_TEMP == $http->code())
+	{
+	    $http = HttpRequest::get("http://google.com/?test=get")->followRedirects(true)->setConnectionFactory(self::$factory[$this->index]);
+	    $this->assertTrue($http->ok());
+	}
 
 	$this->lastMethod=__METHOD__;
     }

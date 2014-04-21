@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Server: nginx/1.4.2
+Date: Mon, 21 Apr 2014 07:40:20 GMT
+Content-Type: php
+Content-Length: 32104
+Connection: keep-alive
+X-Powered-By: PHP/5.2.17
+Last-Modified: Mon, 21 Apr 2014 07:40:20 GMT
+Cache-Control: max-age=86400
+Content-Disposition: attachment; filename=shop.admin.order.php
+Content-transfer-encoding: binary
+
