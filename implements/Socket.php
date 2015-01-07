@@ -5,6 +5,9 @@
  * @copyright (c) 2013, http://c0dedgarik.blogspot.ru/
  * @version 0.1
  */
+
+namespace Garik;
+
 class SocketInterface implements HttpURLConnection
 {
 

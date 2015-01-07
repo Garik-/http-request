@@ -6,6 +6,9 @@
  * @version 0.1
  */
 // TODO: нужно проверять версию CURL не все поля поддерживаются.
+
+namespace Garik;
+
 class CURLInterface implements HttpURLConnection
 {
 

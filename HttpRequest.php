@@ -27,6 +27,10 @@
  * IN THE SOFTWARE.
  *
  */
+
+namespace Garik;
+
+
 class HttpRequest
 {
     /**
@@ -179,12 +183,12 @@ class HttpRequest
     private $requestMethod;
 
     /**
-     * @var \HttpConnectionFactory
+     * @var \Garik\HttpConnectionFactory
      */
     private $connectionFactory;
 
     /**
-     * @var \HttpURLConnection
+     * @var \Garik\HttpURLConnection
      */
     private $connection;
 
@@ -207,7 +211,7 @@ class HttpRequest
     /**
      * Specify the {@link ConnectionFactory} used to create new requests.
      *
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function setConnectionFactory(HttpConnectionFactory $connectionFactory = null)
     {
@@ -287,7 +291,7 @@ class HttpRequest
      * Receive data in a file
      *
      * @param stream|file $file
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function receive($file)
     {
@@ -301,7 +305,7 @@ class HttpRequest
      * Upload a file to the server using PUT
      *
      * @param string $fileName
-     * @return \HttpRequest
+     * @return HttpRequest
      * @throws HttpRequestException
      */
     public function upload($fileName)
@@ -340,7 +344,7 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function put($url, $params = null)
     {
@@ -352,7 +356,7 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function delete($url, $params = null)
     {
@@ -364,7 +368,7 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function head($url, $params = null)
     {
@@ -376,7 +380,7 @@ class HttpRequest
      *
      * @param string $url
      * @param object/Array $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function get($url, $params = null)
     {
@@ -388,7 +392,7 @@ class HttpRequest
      *
      * @param string $url
      * @param object/Array $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function post($url, $params = null)
     {
@@ -409,7 +413,7 @@ class HttpRequest
      * Set connect timeout on connection to given value
      *
      * @param float $timeout
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function connectTimeout($timeout)
     {
@@ -421,7 +425,7 @@ class HttpRequest
      * Set read timeout on connection to given value
      *
      * @param timeout
-     * @return this request
+     * @return HttpRequest
      */
     public function readTimeout($timeout)
     {
@@ -434,7 +438,7 @@ class HttpRequest
      * you need to specify the "file_field" => "@/path/to/file/img.png"
      *
      * @param Array|String $fields
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function form($fields)
     {
@@ -447,7 +451,7 @@ class HttpRequest
      *
      * @param string $name имя поля заголовка
      * @param string $value новое значение
-     * @return \HttpRequest если $value было передано или string значение заголовка ответа сервера
+     * @return HttpRequest если $value было передано или string значение заголовка ответа сервера
      */
     public function header($name, $value = null)
     {
@@ -464,7 +468,7 @@ class HttpRequest
      * Устанавливает заголовки запроса к серверу, либо возвращает заголовки ответа сервера
      *
      * @param array $headers
-     * @return \HttpRequest  либо array
+     * @return HttpRequest  либо array
      */
     public function headers(Array $headers = null)
     {
@@ -485,7 +489,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $accept
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function accept($accept = null)
     {
@@ -497,7 +501,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $contentType
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentType($contentType = null)
     {
@@ -507,7 +511,7 @@ class HttpRequest
     /**
      * Set the 'Accept' header to 'application/json'
      *
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function acceptJson()
     {
@@ -539,7 +543,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param integer $contentLength
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentLength($contentLength = null)
     {
@@ -551,7 +555,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $userAgent
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function userAgent($userAgent = null)
     {
@@ -563,7 +567,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $referer
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function referer($referer = null)
     {
@@ -575,7 +579,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $referer
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function acceptEncoding($acceptEncoding = null)
     {
@@ -587,7 +591,7 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $referer
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function acceptCharset($acceptCharset = null)
     {
@@ -597,7 +601,7 @@ class HttpRequest
     /**
      * Get the 'Content-Encoding' header from the response
      *
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentEncoding()
     {
@@ -617,7 +621,7 @@ class HttpRequest
     /**
      * Get the 'Date' header from the response
      *
-     * @return date value
+     * @return string date value
      */
     public function date()
     {
@@ -627,7 +631,7 @@ class HttpRequest
     /**
      * Get the 'Cache-Control' header from the response
      *
-     * @return cache control
+     * @return string cache control
      */
     public function cacheControl()
     {
@@ -637,7 +641,7 @@ class HttpRequest
     /**
      * Get the 'Expires' header from the response
      *
-     * @return expires value
+     * @return string expires value
      */
     public function expires()
     {
@@ -647,7 +651,7 @@ class HttpRequest
     /**
      * Get the 'Last-Modified' header from the response
      *
-     * @return last modified value
+     * @return string last modified value
      */
     public function lastModified()
     {
@@ -657,7 +661,7 @@ class HttpRequest
     /**
      * Get underlying connection
      *
-     * @return connection
+     * @return HttpURLConnection
      */
     public function getConnection()
     {
@@ -679,7 +683,7 @@ class HttpRequest
      * the response.
      *
      * @param boolean $followRedirects
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function followRedirects($followRedirects)
     {
@@ -730,7 +734,7 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 
 }
 
-class HttpRequestException extends Exception
+class HttpRequestException extends \Exception
 {
 
 }
