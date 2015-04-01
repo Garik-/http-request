@@ -33,7 +33,7 @@ class CURL implements HttpConnectionFactory
 class HttpRequestTest extends \PHPUnit_Framework_TestCase
 {
 
-    const URL = "http://localhost/http/test/test.php";
+    const URL = "http://localhost/xakep/http/test/test.php";
 
     private $lastMethod;
     private static $factory;
@@ -63,7 +63,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
     public function testGet()
     {
 	$http = HttpRequest::get(self::URL)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertInstanceOf('Garik\HttpRequest', $http);
 	$this->assertEquals(HttpRequest::METHOD_GET, $http->method());
 
 	$this->lastMethod=__METHOD__;
@@ -72,7 +72,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
     public function testPut()
     {
 	$http = HttpRequest::put(self::URL)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertInstanceOf('Garik\HttpRequest', $http);
 	$this->assertEquals(HttpRequest::METHOD_PUT, $http->method());
 
 	$this->lastMethod=__METHOD__;
@@ -81,7 +81,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
     public function testDelete()
     {
 	$http = HttpRequest::delete(self::URL)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertInstanceOf('Garik\HttpRequest', $http);
 	$this->assertEquals(HttpRequest::METHOD_DELETE, $http->method());
 
 	$this->lastMethod=__METHOD__;
@@ -90,7 +90,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
     public function testHead()
     {
 	$http = HttpRequest::head(self::URL)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertInstanceOf('Garik\HttpRequest', $http);
 	$this->assertEquals(HttpRequest::METHOD_HEAD, $http->method());
 
 	$this->lastMethod=__METHOD__;
@@ -108,7 +108,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
     public function testHeader()
     {
 	$http = HttpRequest::get(self::URL)->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http->header("trololo", "123")); // устанавилваем несуществующий заогловок
+	$this->assertInstanceOf('Garik\HttpRequest', $http->header("trololo", "123")); // устанавилваем несуществующий заогловок
 	$this->assertEquals(null, $http->header("trololo")); // заголовок ответа не должен возвратится
 
 	unset($http);
@@ -129,7 +129,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
 
 	// передача multipart/form-data
 	$http = HttpRequest::post(self::URL, array("post" => 1))->form(array("param1" => "value", "param2" => "@".$image_upload))->setConnectionFactory(self::$factory[$this->index]);
-	$this->assertInstanceOf('HttpRequest', $http);
+	$this->assertInstanceOf('Garik\HttpRequest', $http);
 	$this->assertEquals('POST', $http->method());
 	$this->assertEquals('param1=value', $http->body());
 	$this->assertFileExists($image);
@@ -170,7 +170,7 @@ class HttpRequestTest extends \PHPUnit_Framework_TestCase
 	    $file = fopen($file_downloaded, 'wb');
 	    if($file)
 	    {
-		$http = HttpRequest::get("http://localhost/http/test/file.txt")->receive($file)->setConnectionFactory(self::$factory[$this->index]);
+		$http = HttpRequest::get("http://localhost/xakep/http/test/file.txt")->receive($file)->setConnectionFactory(self::$factory[$this->index]);
 		$this->assertTrue($http->ok());
 		$this->assertFileEquals($file_original, $file_downloaded);
 		fclose($file);
