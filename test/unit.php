@@ -1,5 +1,7 @@
 <?php
 
+namespace Garik;
+
 define('BASEPATH', dirname(__FILE__).DIRECTORY_SEPARATOR);
 define('PATH_TMP', sys_get_temp_dir().DIRECTORY_SEPARATOR);
 define('PATH_IMPL', BASEPATH.'..'.DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR);
@@ -28,7 +30,7 @@ class CURL implements HttpConnectionFactory
 
 }
 
-class HttpRequestTest extends PHPUnit_Framework_TestCase
+class HttpRequestTest extends \PHPUnit_Framework_TestCase
 {
 
     const URL = "http://localhost/http/test/test.php";

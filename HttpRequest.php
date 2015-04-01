@@ -27,12 +27,15 @@
  * IN THE SOFTWARE.
  *
  */
+
+namespace Garik;
+
+
 class HttpRequest
 {
     /**
      * 'GET' request method
      */
-
     const METHOD_GET = "GET";
 
     /**
@@ -179,48 +182,48 @@ class HttpRequest
     private $requestMethod;
 
     /**
-     * @var \HttpConnectionFactory
+     * @var \Garik\HttpConnectionFactory
      */
     private $connectionFactory;
 
     /**
-     * @var \HttpURLConnection
+     * @var \Garik\HttpURLConnection
      */
     private $connection;
 
     /**
-     *
      * @param string $url
      * @param string $method
      * @param array|object $params
      */
     function __construct($url, $method, $params = null)
     {
-	if ($params)
-	    $url = $this->append($url, $params);
+        if ($params)
+            $url = $this->append($url, $params);
 
-	$this->url = parse_url($url);
-	$this->requestMethod = (string) $method;
-	$this->setConnectionFactory();
+        $this->url = parse_url($url);
+        $this->requestMethod = (string) $method;
+        $this->setConnectionFactory();
     }
 
     /**
      * Specify the {@link ConnectionFactory} used to create new requests.
      *
-     * @return \HttpRequest
+     * @param HttpConnectionFactory $connectionFactory
+     * @return HttpRequest
      */
     public function setConnectionFactory(HttpConnectionFactory $connectionFactory = null)
     {
-	if ($connectionFactory == null)
-	{
-	    $this->connectionFactory = new DEFAULT_FACTORY();
-	}
-	else
-	{
-	    $this->connectionFactory = $connectionFactory;
-	}
+        if ($connectionFactory == null)
+        {
+            $this->connectionFactory = new DEFAULT_FACTORY();
+        }
+        else
+        {
+            $this->connectionFactory = $connectionFactory;
+        }
 
-	return $this;
+        return $this;
     }
 
     /**
@@ -230,7 +233,7 @@ class HttpRequest
      */
     public function ok()
     {
-	return HttpRequest::HTTP_OK == $this->code();
+        return HttpRequest::HTTP_OK == $this->code();
     }
 
     /**
@@ -240,7 +243,7 @@ class HttpRequest
      */
     public function created()
     {
-	return HttpRequest::HTTP_CREATED == $this->code();
+        return HttpRequest::HTTP_CREATED == $this->code();
     }
 
     /**
@@ -250,7 +253,7 @@ class HttpRequest
      */
     public function serverError()
     {
-	return HttpRequest::HTTP_INTERNAL_ERROR == $this->code();
+        return HttpRequest::HTTP_INTERNAL_ERROR == $this->code();
     }
 
     /**
@@ -260,7 +263,7 @@ class HttpRequest
      */
     public function badRequest()
     {
-	return HttpRequest::HTTP_BAD_REQUEST == $this->code();
+        return HttpRequest::HTTP_BAD_REQUEST == $this->code();
     }
 
     /**
@@ -270,7 +273,7 @@ class HttpRequest
      */
     public function notFound()
     {
-	return HttpRequest::HTTP_NOT_FOUND == $this->code();
+        return HttpRequest::HTTP_NOT_FOUND == $this->code();
     }
 
     /**
@@ -280,37 +283,38 @@ class HttpRequest
      */
     public function notModified()
     {
-	return HttpRequest::HTTP_NOT_MODIFIED == $this->code();
+        return HttpRequest::HTTP_NOT_MODIFIED == $this->code();
     }
 
     /**
      * Receive data in a file
      *
-     * @param stream|file $file
-     * @return \HttpRequest
+     * @param resource $file stream or file
+     * @return HttpRequest
+     * @throws HttpRequestException
      */
     public function receive($file)
     {
-	if (!is_resource($file))
-	    throw new HttpRequestException('Это не ссылка на файл');
-	$this->getConnection()->setReceiveFile($file);
-	return $this;
+        if (!is_resource($file))
+            throw new HttpRequestException('Это не ссылка на файл');
+        $this->getConnection()->setReceiveFile($file);
+        return $this;
     }
 
     /**
      * Upload a file to the server using PUT
      *
      * @param string $fileName
-     * @return \HttpRequest
+     * @return HttpRequest
      * @throws HttpRequestException
      */
     public function upload($fileName)
     {
-	if (!file_exists($fileName))
-	    throw new HttpRequestException('Файла не существует');
-	$this->getConnection()->setUploadFile($fileName);
+        if (!file_exists($fileName))
+            throw new HttpRequestException('Файла не существует');
+        $this->getConnection()->setUploadFile($fileName);
 
-	return $this;
+        return $this;
     }
 
     /**
@@ -320,7 +324,7 @@ class HttpRequest
      */
     public function message()
     {
-	return $this->getConnection()->getResponseMessage();
+        return $this->getConnection()->getResponseMessage();
     }
 
     /**
@@ -332,7 +336,7 @@ class HttpRequest
      */
     private function append($url, $params)
     {
-	return $url.(strpos($url, '?') === false ? '?' : '&').http_build_query($params);
+        return $url.(strpos($url, '?') === false ? '?' : '&').http_build_query($params);
     }
 
     /**
@@ -340,11 +344,11 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function put($url, $params = null)
     {
-	return new HttpRequest($url, HttpRequest::METHOD_PUT, $params);
+        return new HttpRequest($url, HttpRequest::METHOD_PUT, $params);
     }
 
     /**
@@ -352,11 +356,11 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function delete($url, $params = null)
     {
-	return new HttpRequest($url, HttpRequest::METHOD_DELETE, $params);
+        return new HttpRequest($url, HttpRequest::METHOD_DELETE, $params);
     }
 
     /**
@@ -364,11 +368,11 @@ class HttpRequest
      *
      * @param string $url
      * @param array|object $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function head($url, $params = null)
     {
-	return new HttpRequest($url, HttpRequest::METHOD_HEAD, $params);
+        return new HttpRequest($url, HttpRequest::METHOD_HEAD, $params);
     }
 
     /**
@@ -376,11 +380,11 @@ class HttpRequest
      *
      * @param string $url
      * @param object/Array $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function get($url, $params = null)
     {
-	return new HttpRequest($url, HttpRequest::METHOD_GET, $params);
+        return new HttpRequest($url, HttpRequest::METHOD_GET, $params);
     }
 
     /**
@@ -388,11 +392,11 @@ class HttpRequest
      *
      * @param string $url
      * @param object/Array $params
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     static public function post($url, $params = null)
     {
-	return new HttpRequest($url, HttpRequest::METHOD_POST, $params);
+        return new HttpRequest($url, HttpRequest::METHOD_POST, $params);
     }
 
     /**
@@ -402,31 +406,31 @@ class HttpRequest
      */
     public function url()
     {
-	return $this->url;
+        return $this->url;
     }
 
     /**
      * Set connect timeout on connection to given value
      *
      * @param float $timeout
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function connectTimeout($timeout)
     {
-	$this->getConnection()->setConnectTimeout($timeout);
-	return $this;
+        $this->getConnection()->setConnectTimeout($timeout);
+        return $this;
     }
 
     /**
      * Set read timeout on connection to given value
      *
      * @param timeout
-     * @return this request
+     * @return HttpRequest
      */
     public function readTimeout($timeout)
     {
-	$this->getConnection()->setReadTimeout($timeout);
-	return $this;
+        $this->getConnection()->setReadTimeout($timeout);
+        return $this;
     }
 
     /**
@@ -434,12 +438,12 @@ class HttpRequest
      * you need to specify the "file_field" => "@/path/to/file/img.png"
      *
      * @param Array|String $fields
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function form($fields)
     {
-	$this->getConnection()->setPostFields($fields);
-	return $this;
+        $this->getConnection()->setPostFields($fields);
+        return $this;
     }
 
     /**
@@ -447,37 +451,37 @@ class HttpRequest
      *
      * @param string $name имя поля заголовка
      * @param string $value новое значение
-     * @return \HttpRequest если $value было передано или string значение заголовка ответа сервера
+     * @return HttpRequest если $value было передано или string значение заголовка ответа сервера
      */
     public function header($name, $value = null)
     {
-	if ($value != null)
-	{
-	    $this->getConnection()->setRequestProperty((string) $name, (string) $value);
-	    return $this;
-	}
+        if ($value != null)
+        {
+            $this->getConnection()->setRequestProperty((string) $name, (string) $value);
+            return $this;
+        }
 
-	return $this->getConnection()->getHeaderField($name);
+        return $this->getConnection()->getHeaderField($name);
     }
 
     /**
      * Устанавливает заголовки запроса к серверу, либо возвращает заголовки ответа сервера
      *
      * @param array $headers
-     * @return \HttpRequest  либо array
+     * @return HttpRequest  либо array
      */
     public function headers(Array $headers = null)
     {
-	if ($headers == null)
-	{
-	    return $this->getConnection()->getHeaderFields();
-	}
+        if ($headers == null)
+        {
+            return $this->getConnection()->getHeaderFields();
+        }
 
-	foreach ($headers as $name => $value)
-	{
-	    $this->header($name, $value);
-	}
-	return $this;
+        foreach ($headers as $name => $value)
+        {
+            $this->header($name, $value);
+        }
+        return $this;
     }
 
     /**
@@ -485,11 +489,11 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $accept
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function accept($accept = null)
     {
-	return $this->header(HttpRequest::HEADER_ACCEPT, $accept);
+        return $this->header(HttpRequest::HEADER_ACCEPT, $accept);
     }
 
     /**
@@ -497,21 +501,21 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $contentType
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentType($contentType = null)
     {
-	return $this->header(HttpRequest::HEADER_CONTENT_TYPE, $contentType);
+        return $this->header(HttpRequest::HEADER_CONTENT_TYPE, $contentType);
     }
 
     /**
      * Set the 'Accept' header to 'application/json'
      *
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function acceptJson()
     {
-	return $this->accept(HttpRequest::CONTENT_TYPE_JSON);
+        return $this->accept(HttpRequest::CONTENT_TYPE_JSON);
     }
 
     /**
@@ -521,7 +525,7 @@ class HttpRequest
      */
     public function code()
     {
-	return (integer) $this->getConnection()->getResponseCode();
+        return (integer) $this->getConnection()->getResponseCode();
     }
 
     /**
@@ -531,7 +535,7 @@ class HttpRequest
      */
     public function body()
     {
-	return $this->getConnection()->getResponse();
+        return $this->getConnection()->getResponse();
     }
 
     /**
@@ -539,11 +543,11 @@ class HttpRequest
      * or get header from the response
      *
      * @param integer $contentLength
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentLength($contentLength = null)
     {
-	return $this->header(HttpRequest::HEADER_CONTENT_LENGTH, (integer) $contentLength);
+        return $this->header(HttpRequest::HEADER_CONTENT_LENGTH, (integer) $contentLength);
     }
 
     /**
@@ -551,127 +555,129 @@ class HttpRequest
      * or get header from the response
      *
      * @param string $userAgent
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function userAgent($userAgent = null)
     {
-	return $this->header(HttpRequest::HEADER_USER_AGENT, $userAgent);
+        return $this->header(HttpRequest::HEADER_USER_AGENT, $userAgent);
     }
 
     /**
      * Set the 'Referer' header to given value
      * or get header from the response
      *
-     * @param string $referer
-     * @return \HttpRequest
+     * @param string $referrer
+     * @return HttpRequest
      */
-    public function referer($referer = null)
+    public function referer($referrer = null)
     {
-	return $this->header(HttpRequest::HEADER_REFERER, $referer);
+        return $this->header(HttpRequest::HEADER_REFERER, $referrer);
     }
 
     /**
      * Set the 'Accept-Encoding' header to given value
      * or get header from the response
      *
-     * @param string $referer
-     * @return \HttpRequest
+     * @param string|null $acceptEncoding
+     * @return HttpRequest
+     * @internal param string $referer
      */
     public function acceptEncoding($acceptEncoding = null)
     {
-	return $this->header(HttpRequest::HEADER_ACCEPT_ENCODING, $acceptEncoding);
+        return $this->header(HttpRequest::HEADER_ACCEPT_ENCODING, $acceptEncoding);
     }
 
     /**
      * Set the 'Accept-Charset' header to given value
      * or get header from the response
      *
-     * @param string $referer
-     * @return \HttpRequest
+     * @param string|null $acceptCharset
+     * @return HttpRequest
      */
     public function acceptCharset($acceptCharset = null)
     {
-	return $this->header(HttpRequest::HEADER_ACCEPT_CHARSET, $acceptCharset);
+        return $this->header(HttpRequest::HEADER_ACCEPT_CHARSET, $acceptCharset);
     }
 
     /**
      * Get the 'Content-Encoding' header from the response
      *
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function contentEncoding()
     {
-	return $this->header(HttpRequest::HEADER_CONTENT_ENCODING);
+        return $this->header(HttpRequest::HEADER_CONTENT_ENCODING);
     }
 
     /**
      * Get the 'Server' header from the response
      *
-     * @return server
+     * @return string server
      */
     public function server()
     {
-	return $this->header(HttpRequest::HEADER_SERVER);
+        return $this->header(HttpRequest::HEADER_SERVER);
     }
 
     /**
      * Get the 'Date' header from the response
      *
-     * @return date value
+     * @return string date value
      */
     public function date()
     {
-	return $this->header(HttpRequest::HEADER_DATE);
+        return $this->header(HttpRequest::HEADER_DATE);
     }
 
     /**
      * Get the 'Cache-Control' header from the response
      *
-     * @return cache control
+     * @return string cache control
      */
     public function cacheControl()
     {
-	return $this->header(HttpRequest::HEADER_CACHE_CONTROL);
+        return $this->header(HttpRequest::HEADER_CACHE_CONTROL);
     }
 
     /**
      * Get the 'Expires' header from the response
      *
-     * @return expires value
+     * @return string expires value
      */
     public function expires()
     {
-	return $this->header(HttpRequest::HEADER_EXPIRES);
+        return $this->header(HttpRequest::HEADER_EXPIRES);
     }
 
     /**
      * Get the 'Last-Modified' header from the response
      *
-     * @return last modified value
+     * @return string last modified value
      */
     public function lastModified()
     {
-	return $this->header(HttpRequest::HEADER_LAST_MODIFIED);
+        return $this->header(HttpRequest::HEADER_LAST_MODIFIED);
     }
 
     /**
      * Get underlying connection
      *
-     * @return connection
+     * @return HttpURLConnection
      */
     public function getConnection()
     {
-	if ($this->connection == null)
-	    $this->connection = $this->createConnection();
-	return $this->connection;
+        if ($this->connection == null)
+            $this->connection = $this->createConnection();
+
+        return $this->connection;
     }
 
     private function createConnection()
     {
-	$this->connection = call_user_func(array($this->connectionFactory, 'create'), $this->url);
-	$this->connection->setRequestMethod($this->requestMethod);
+        $this->connection = call_user_func(array($this->connectionFactory, 'create'), $this->url);
+        $this->connection->setRequestMethod($this->requestMethod);
 
-	return $this->connection;
+        return $this->connection;
     }
 
     /**
@@ -679,12 +685,12 @@ class HttpRequest
      * the response.
      *
      * @param boolean $followRedirects
-     * @return \HttpRequest
+     * @return HttpRequest
      */
     public function followRedirects($followRedirects)
     {
-	$this->getConnection()->setFollowRedirects((boolean) $followRedirects);
-	return $this;
+        $this->getConnection()->setFollowRedirects((boolean) $followRedirects);
+        return $this;
     }
 
     /**
@@ -694,14 +700,13 @@ class HttpRequest
      */
     public function method()
     {
-	return $this->getConnection()->getRequestMethod();
+        return $this->getConnection()->getRequestMethod();
     }
 
 }
 
 interface HttpConnectionFactory
 {
-
     public static function create($url);
 }
 
@@ -710,27 +715,27 @@ class DEFAULT_FACTORY implements HttpConnectionFactory
 
     public static function create($url)
     {
-	$basepath = dirname(__FILE__).DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR;
+        $basepath = dirname(__FILE__).DIRECTORY_SEPARATOR.'implements'.DIRECTORY_SEPARATOR;
 
-	// предпочтение отдается библиотеке cURL
-	if (extension_loaded('curl') && file_exists($basepath.'CURL.php'))
-	{
-	    require_once $basepath.'CURL.php';
-	    return new CURLInterface($url);
-	}
+        // предпочтение отдается библиотеке cURL
+        if (extension_loaded('curl') && file_exists($basepath.'CURL.php'))
+        {
+            require_once $basepath.'CURL.php';
+            return new CURLInterface($url);
+        }
 
-	if (function_exists('fsockopen') && file_exists($basepath.'Socket.php'))
-	{
-	    require_once $basepath.'Socket.php';
-	    return new SocketInterface($url);
-	}
+        if (function_exists('fsockopen') && file_exists($basepath.'Socket.php'))
+        {
+            require_once $basepath.'Socket.php';
+            return new SocketInterface($url);
+        }
 
-	throw new HttpRequestException('Подключите PHP-библиотеку cURL или sockets.');
+        throw new HttpRequestException('Подключите PHP-библиотеку cURL или sockets.');
     }
 
 }
 
-class HttpRequestException extends Exception
+class HttpRequestException extends \Exception
 {
 
 }
@@ -807,13 +812,13 @@ interface HttpURLConnection
 
     /**
      * Записать ответ сервера в файл
-     * @param stream|file $file
+     * @param resource $file stream or file
      */
     public function setReceiveFile($file);
 
     /**
      * Установить файл для загрузки методом PUT
-     * @param type $fileName
+     * @param string $fileName
      */
     public function setUploadFile($fileName);
 
