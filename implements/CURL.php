@@ -33,7 +33,8 @@ class CURLInterface implements HttpURLConnection
             CURLOPT_HEADER         => true,
             CURLOPT_ENCODING       => '',
             CURLOPT_NOPROGRESS     => true,
-            CURLOPT_VERBOSE        => false
+            CURLOPT_VERBOSE        => false,
+            CURLOPT_SSL_VERIFYPEER => false
         );
 
         if (array_key_exists('port', $url))
